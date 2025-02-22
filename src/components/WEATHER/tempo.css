@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=MuseoModerno:ital,wght@0,100..900;1,100..900&display=swap");
+
+.widget-container {
+  display: flex;
+  flex-direction: column; /* Changed from row to column to stack widgets vertically */
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: 2.5rem; /* Optional: adds space between widgets */
+}
+
+.weather-widget {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	background: rgb(255, 255, 255);
+	color: #443c3c;
+	border-radius: 1rem;
+	padding: 0;
+	box-shadow: 0 0 2rem rgba(214, 214, 214, 0.8);
+	
+	max-width: 14rem;
+	text-align: center;
+}
+
+.clock {
+  position: absolute;
+  font-weight: bold;
+  top: 1rem;
+  left: 1rem;
+  font-size: 1.2rem;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.8);
+}
+
+.weather-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.weather-icon {
+  font-size: 6rem;
+  margin-bottom: 1.5rem;
+}
+
+.weather-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.weather-details h2 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.weather-details p {
+  margin: 0.5rem 0;
+  font-size: 1.5rem;
+}
+
+.weather-details .temperature {
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.weather-details .condition {
+  text-transform: capitalize;
+}
+
+.weather-icon.sunny::before {
+  content: "☀️";
+}
+
+.weather-icon.cloudy::before {
+  content: "☁️";
+}
+
+.weather-icon.rainy::before {
+  content: "🌧️";
+}
+
+.weather-icon.snowy::before {
+  content: "❄️";
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

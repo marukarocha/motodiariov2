@@ -1,0 +1,16 @@
+import { FirebaseProvider } from '../lib/db/firebaseContext';
+import type { AppProps } from 'next/app';
+import '../styles/globals.css' // Importe seus estilos globais, se necessário
+import { AuthProvider } from '../components/USER/Auth/AuthContext'; // Importe o AuthProvider
+
+
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <FirebaseProvider> {/* Se usar o FirebaseContext */}
+    <AuthProvider> {/* Envolva com AuthProvider */}
+      <Component {...pageProps} />
+    </AuthProvider>
+    </FirebaseProvider>
+  );
+}

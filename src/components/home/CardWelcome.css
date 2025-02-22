@@ -1,0 +1,44 @@
+/* src/components/HOME/CardWelcome.css */
+.card-welcome {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.card-welcome .card-body {
+    padding: 20px;
+}
+
+.card-welcome .welcome-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.card-welcome .weather-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+}
+
+@media (min-width: 768px) {
+    .card-welcome .weather-container {
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+    }
+}
+
+.timer-card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.timer-card .card-body {
+    padding: 20px;
+}
+.card-weather {
+	background-color: #eee;
+}

@@ -1,0 +1,61 @@
+.config-section h4 {
+    font-size: 1.2rem;
+    color: #007bff; /* Cor azul para os títulos */
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.form-control, .form-select {
+    font-size: 0.9rem;
+}
+
+.form-text {
+    font-size: 0.8rem;
+}
+
+.info-text {
+    font-style: italic;
+}
+
+.table {
+    font-size: 0.9rem;
+}
+
+.table th {
+    font-size: 1rem;
+}
+
+.config-section {
+    border: 1px solid #ced4da;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.nav-pills .nav-link {
+    background-color: #e9ecef; /* Cor de fundo mais clara para as pílulas inativas */
+    color: #495057; /* Cor do texto para as pílulas inativas */
+    margin: 0 5px; /* Espaçamento entre as pílulas */
+    border-radius: 0.25rem; /* Borda arredondada */
+    transition: all 0.3s ease; /* Transição suave */
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .nav-link:hover {
+    background-color: #007bff; /* Cor de fundo para a pílula ativa e hover */
+    color: #fff; /* Cor do texto para a pílula ativa e hover */
+}
+
+.pill-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}

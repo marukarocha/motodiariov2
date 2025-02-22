@@ -1,0 +1,20 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const storedUid = localStorage.getItem('uid');
+
+    if (storedUid) {
+      router.push('/user');
+    } else {
+      router.push('/login');
+    }
+  }, [router]);
+
+  return null;
+}

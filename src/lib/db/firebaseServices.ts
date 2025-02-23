@@ -160,18 +160,6 @@ async function getBikeData(userId: string) {
   }
 }
 
-// Função para obter os dados da moto (duplicada, se não usar, remover)
-async function obterDadosMoto(userId: string) {
-  const userRef = doc(db, "users", userId);
-  const docSnap = await getDoc(userRef);
-  if (docSnap.exists()) {
-    return docSnap.data().moto || null;
-  } else {
-    return null;
-  }
-}
-
-
 
 /* =======================
    FUNÇÕES PARA Manutenção
@@ -460,7 +448,6 @@ export {
   getEarnings,
   registerBike,
   getBikeData,
-  obterDadosMoto, // Remova se não for necessário
   addFueling,
   getFuelings,
   saveUserConfig,

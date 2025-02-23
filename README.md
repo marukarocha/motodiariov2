@@ -25,7 +25,11 @@ A estrutura do projeto está organizada da seguinte forma:
 │   │   ├── admin/
 │   │   ├── api/auth/
 │   │   ├── bike/
+<<<<<<< HEAD
 │   │   ├── Fuelings/
+=======
+│   │   ├── earnings/
+>>>>>>> 1930d749f0da1ef9c1a03cd9475ae4b6077eee65
 │   │   ├── fuelings/
 │   │   ├── login/
 │   │   ├── styles/

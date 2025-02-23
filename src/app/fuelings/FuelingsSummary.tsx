@@ -1,40 +1,59 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Clock, Calendar } from "lucide-react";
+// src/app/fuelings/FuelingsSummary.tsx
+'use client';
 
-interface EarningsSummaryProps {
-  totalEarnings: number | null;
-  averageEarningsPerHour: number | null;
-  averageEarningsPerDay: number | null;
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DollarSign, Droplet, Calculator, List } from "lucide-react";
+import { useFuelingsSummary } from "@/hooks/useFuelingsSummary";
+
+interface Fueling {
+  litros: number | string;
+  valorLitro: number | string;
+  // outros campos se necessário...
 }
 
-export function EarningsSummary({ totalEarnings, averageEarningsPerHour, averageEarningsPerDay }: EarningsSummaryProps) {
+interface FuelingsSummaryProps {
+  fuelings: Fueling[];
+}
+
+export function FuelingsSummary({ fuelings }: FuelingsSummaryProps) {
+  const { totalCost, totalLiters, averageCostPerLiter, totalFuelings } = useFuelingsSummary(fuelings);
+
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Ganhos</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Gasto</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">R$ {totalEarnings?.toFixed(2) || 0}</div>
+          <div className="text-2xl font-bold">R$ {totalCost.toFixed(2)}</div>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Média de Ganho por Hora</CardTitle>
-          <Clock className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Total de Litros</CardTitle>
+          <Droplet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">R$ {averageEarningsPerHour?.toFixed(2) || 0}</div>
+          <div className="text-2xl font-bold">{totalLiters.toFixed(2)} L</div>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Média de Ganho por Dia</CardTitle>
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Média por Litro</CardTitle>
+          <Calculator className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">R$ {averageEarningsPerDay?.toFixed(2) || 0}</div>
+          <div className="text-2xl font-bold">R$ {averageCostPerLiter.toFixed(2)}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total de Abastecimentos</CardTitle>
+          <List className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{totalFuelings}</div>
         </CardContent>
       </Card>
     </div>

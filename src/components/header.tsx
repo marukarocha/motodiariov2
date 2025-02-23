@@ -33,13 +33,13 @@ export function Header() {
             <a className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/dashboard/customers">
               Corridas
             </a>
-            <a className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/dashboard/products">
+            <a className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/fuelings">
               Abastecimentos
             </a>
             <a className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/bike">
               Moto
             </a>
-            <a className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/dashboard/settings">
+            <a className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/maintenance">
               Manutenções
             </a>
           </nav>

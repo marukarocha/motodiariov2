@@ -1,21 +1,23 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, CreditCard, DollarSign, Users, Car } from "lucide-react";
-import { calculateTotalEarnings, calculateTotalFuelings, calculateTotalKilometers, calculateTotalHours } from "@/components/home/utils";
+import { Activity, CreditCard, DollarSign, Car } from "lucide-react";
+import { calculateTotalEarnings, calculateTotalKilometers, calculateTotalHours } from "@/components/home/utils";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useState, useEffect } from "react";
 import WeatherCard from "@/components/home/WeatherCard";
+import { useFuelingsSummary } from '@/hooks/useFuelingsSummary';
+import { getFuelings } from "@/lib/db/firebaseServices";
 
 interface Earning {
-    id: string;
-    amount: number;
-    mileage: number;
-    platform: string;
-    tip?: number;
-    description?: string;
-    date: any;
-    hours?: number;
+  id: string;
+  amount: number;
+  mileage: number;
+  platform: string;
+  tip?: number;
+  description?: string;
+  date: any;
+  hours?: number;
 }
 
 interface OverviewProps {
@@ -25,38 +27,31 @@ interface OverviewProps {
 export function Overview({ earnings }: OverviewProps) {
   const { currentUser } = useAuth();
   const [totalEarnings, setTotalEarnings] = useState<number | null>(null);
-  const [totalFuelings, setTotalFuelings] = useState<number | null>(null);
   const [totalKilometers, setTotalKilometers] = useState<number | null>(null);
   const [totalHours, setTotalHours] = useState<number | null>(null);
+  const [fuelings, setFuelings] = useState<any[]>([]);
+
+  // Usa o hook para calcular os totais dos abastecimentos
+  const { totalFuelings } = useFuelingsSummary(fuelings);
 
   useEffect(() => {
     const fetchData = async () => {
-      console.log('Overview: fetchData - Iniciando para usuário:', currentUser?.uid);
-      if (currentUser && currentUser.uid && earnings) {
+      if (currentUser && currentUser.uid) {
         const uid = currentUser.uid;
         try {
           const earningsTotal = await calculateTotalEarnings(uid);
-          console.log('Overview: fetchData - Total de ganhos:', earningsTotal);
-          const fuelings = await calculateTotalFuelings(uid);
-          console.log('Overview: fetchData - Total de abastecimentos:', fuelings);
           const kilometers = await calculateTotalKilometers(uid);
-          console.log('Overview: fetchData - Total de quilômetros:', kilometers);
           const hours = await calculateTotalHours(uid);
-          console.log('Overview: fetchData - Total de horas:', hours);
-
+          const fuelingsData = await getFuelings(uid);
           setTotalEarnings(earningsTotal);
-          setTotalFuelings(fuelings);
           setTotalKilometers(kilometers);
           setTotalHours(hours);
+          setFuelings(fuelingsData);
         } catch (error) {
-          console.error('Overview: fetchData - Erro ao buscar dados:', error);
+          console.error("Overview: fetchData - Erro ao buscar dados:", error);
         }
-      } else {
-        console.log('Overview: fetchData - currentUser ou currentUser.uid é null ou undefined, ou earnings é null.');
       }
-      console.log('Overview: fetchData - Concluído.');
     };
-
     fetchData();
   }, [currentUser, earnings]);
 

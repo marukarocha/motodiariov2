@@ -1,36 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { PlusCircleIcon } from 'lucide-react';
-import RegisterEarnings from '@/app/earnings/RegisterEarnings'; // Ajuste o caminho se necessário
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from '@/components/ui/button';
+import RegisterFuelings from './RegisterFuelings';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger
+} from '@/components/ui/dialog';
 
-interface RegisterEarningButtonProps {
-  onEarningAdded: () => void;
+interface RegisterFuelingButtonProps {
+  onFuelingAdded: () => void;
 }
 
-export function RegisterEarningButton({ onEarningAdded }: RegisterEarningButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function RegisterFuelingButton({ onFuelingAdded }: RegisterFuelingButtonProps) {
+  const [open, setOpen] = useState(false);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button 
-          onClick={() => setIsOpen(true)}
-          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4"
-        >
-          <PlusCircleIcon className="h-4 w-4 mr-2" />
-          Registrar Ganho
-        </Button>
+        <Button>Registrar Abastecimento</Button>
       </DialogTrigger>
-      <RegisterEarnings
-        onClose={() => setIsOpen(false)}
-        onEarningAdded={() => {
-          setIsOpen(false); // Fecha o modal após adicionar
-          onEarningAdded(); // Chama a função para atualizar a lista
-        }}
-      />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Registrar Abastecimento</DialogTitle>
+          <DialogDescription>
+            Preencha os dados do abastecimento.
+          </DialogDescription>
+        </DialogHeader>
+        <RegisterFuelings
+          onClose={() => setOpen(false)}
+          onFuelingAdded={() => {
+            setOpen(false);
+            onFuelingAdded();
+          }}
+        />
+      </DialogContent>
     </Dialog>
   );
 }

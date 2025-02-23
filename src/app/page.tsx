@@ -4,15 +4,12 @@ import { useEffect, useState } from 'react';
 import { Header } from "@/components/header"
 import  Motivation  from "@/components/home/Motivation"
 import { Overview } from "@/components/overview"
-import { Button } from "@/components/ui/button"
-import { Mail } from "lucide-react"
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { AuthProvider } from '@/components/USER/Auth/AuthContext';
 import { AuthGuard } from '@/components/USER/Auth/authGuard';
 import { RegisterEarningButton } from '@/app/earnings/RegisterEarningButton';
 import { BikeCard } from '@/app/bike/components/BikeCard';
 import { OverviewBike } from '@/app/bike/components/OverviewBike'; // Import OverviewBike Component
-import { useRouter } from 'next/navigation';
 
 interface Earning {
     id: string;
@@ -26,7 +23,6 @@ interface Earning {
 }
 
 const handleAddEarning = () => {
-  fetchData();
 };
 export default function UserPage() {
   const { userData, earnings, error, loading } = useDashboardData();

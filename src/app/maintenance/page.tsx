@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/header";
-import { getManutencoes, deleteManutencao } from "@/lib/db/firebaseServices";
+import { getMaintenance, deleteMaintenance } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -30,7 +30,7 @@ export default function ManutencoesPage() {
     setIsLoading(true);
     try {
       if (!currentUser) return;
-      const data = await getManutencoes(currentUser.uid);
+      const data = await getMaintenance(currentUser.uid);
       setManutencoes(data || []);
     } catch (error) {
       console.error("Erro ao carregar manutenções:", error);
@@ -44,8 +44,9 @@ export default function ManutencoesPage() {
   }, [currentUser]);
 
   const handleDelete = async (id: string) => {
+    if (!currentUser) return;
     try {
-      await deleteManutencao(currentUser.uid, id);
+      await deleteMaintenance(currentUser.uid, id);
       setManutencoes(manutencoes.filter((m) => m.id !== id));
       toast({ title: "Manutenção deletada", description: "Registro removido com sucesso." });
     } catch (error) {

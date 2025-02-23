@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
-import { addManutencao } from "@/lib/db/firebaseServices";
+import { addMaintenance } from "@/lib/db/firebaseServices";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -62,7 +62,7 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
     };
 
     try {
-      await addManutencao(currentUser!.uid, manutencao);
+      await addMaintenance(currentUser!.uid, manutencao);
       alert(`${maintenanceType} registrada com sucesso!`);
       onClose();
       router.push("/manutencoes");

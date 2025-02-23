@@ -11,7 +11,7 @@ import {
   query,
   where,
   orderBy,
-  Timestamp, // Importa Timestamp
+  Timestamp,
 } from "firebase/firestore";
 import { getAuth, signOut } from "firebase/auth";
 
@@ -36,19 +36,19 @@ const auth = getAuth(app);
    ======================= */
 
 // Interface para os dados de ganhos (Earnings)
-interface Earning {
+export interface Earning {
   id: string;
   amount: number;
   mileage: number;
   platform: string;
   tip?: number;
   description?: string;
-  date: any; // Pode ser Timestamp ou Date; convertendo para Date ao ler
+  date: Date; // Convertido para Date na leitura
   hours: number;
 }
 
 // Função para adicionar um ganho
-async function addEarning(userId: string, earning: any) {
+async function addEarning(userId: string, earning: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
   const earningsRef = collection(userRef, "earnings");
   await addDoc(earningsRef, earning);
@@ -63,12 +63,11 @@ async function getEarnings(
   console.log("getEarnings called with:", { userId, startDate, endDate });
   try {
     let earningsRef = collection(db, "users", userId, "earnings");
-    let q: any = null;
+    let q: ReturnType<typeof query>;
 
     if (startDate && endDate) {
       const startTimestamp = Timestamp.fromDate(startDate);
       const endTimestamp = Timestamp.fromDate(endDate);
-      // Ajusta o endTimestamp para incluir o dia inteiro (adiciona 23h59m59s)
       const adjustedEndTimestamp = new Timestamp(
         endTimestamp.seconds + 86399,
         endTimestamp.nanoseconds
@@ -92,7 +91,7 @@ async function getEarnings(
       earnings.push({
         id: docSnap.id,
         ...data,
-        date: data.date.toDate(), // Converte Timestamp para Date
+        date: (data.date as Timestamp).toDate(),
       } as Earning);
     });
     console.log("getEarnings: Returning earnings:", earnings);
@@ -104,7 +103,7 @@ async function getEarnings(
 }
 
 // Função para deletar um ganho
-async function deleteEarning(userId: string, earningId: string) {
+async function deleteEarning(userId: string, earningId: string): Promise<void> {
   try {
     const earningRef = doc(db, "users", userId, "earnings", earningId);
     await deleteDoc(earningRef);
@@ -116,37 +115,39 @@ async function deleteEarning(userId: string, earningId: string) {
 }
 
 /* =======================
-   FUNÇÕES PARA MANUTENÇÕES
+   FUNÇÕES PARA MAINTENANCE
    ======================= */
 
-// Função para adicionar uma manutenção
-async function adicionarManutencao(userId: string, manutencao: any) {
+// Função para adicionar uma maintenance
+async function addMaintenance(userId: string, maintenanceData: Record<string, unknown>): Promise<string> {
   const userRef = doc(db, "users", userId);
-  const manutencoesRef = collection(userRef, "manutencoes");
-  await addDoc(manutencoesRef, manutencao);
+  const maintenanceRef = collection(userRef, "manutencoes"); // Mantém a subcoleção com o nome "manutencoes" no Firebase
+  const docRef = await addDoc(maintenanceRef, maintenanceData);
+  console.log("Maintenance registered successfully!");
+  return docRef.id;
 }
 
-// Função para obter as manutenções de um usuário
-async function obterManutencoes(userId: string) {
+// Função para obter as maintenance de um usuário
+async function getMaintenance(userId: string): Promise<Record<string, unknown>[]> {
   const userRef = doc(db, "users", userId);
-  const manutencoesRef = collection(userRef, "manutencoes");
-  const q = query(manutencoesRef, orderBy("data", "desc"));
+  const maintenanceRef = collection(userRef, "manutencoes");
+  const q = query(maintenanceRef, orderBy("data", "desc"));
   const querySnapshot = await getDocs(q);
-  const manutencoes = [];
+  const maintenance: Record<string, unknown>[] = [];
   querySnapshot.forEach((docSnap) => {
-    manutencoes.push({ id: docSnap.id, ...docSnap.data() });
+    maintenance.push({ id: docSnap.id, ...docSnap.data() });
   });
-  return manutencoes;
+  return maintenance;
 }
 
-// Função para deletar uma manutenção
-async function deleteManutencao(userId: string, manutencaoId: string) {
+// Função para deletar uma maintenance
+async function deleteMaintenance(userId: string, maintenanceId: string): Promise<void> {
   try {
-    const manutencaoRef = doc(db, "users", userId, "manutencoes", manutencaoId);
-    await deleteDoc(manutencaoRef);
-    console.log(`Manutenção com ID ${manutencaoId} deletada com sucesso.`);
+    const maintenanceRef = doc(db, "users", userId, "manutencoes", maintenanceId);
+    await deleteDoc(maintenanceRef);
+    console.log(`Maintenance with ID ${maintenanceId} deleted successfully.`);
   } catch (error) {
-    console.error("Erro ao deletar manutenção:", error);
+    console.error("Erro ao deletar maintenance:", error);
     throw error;
   }
 }
@@ -156,83 +157,19 @@ async function deleteManutencao(userId: string, manutencaoId: string) {
    ======================= */
 
 // Função para registrar os dados da moto
-async function registerBike(userId: string, bikeData: any) {
+async function registerBike(userId: string, bikeData: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
   await setDoc(userRef, { bike: bikeData }, { merge: true });
 }
 
 // Função para obter os dados da moto de um usuário
-async function getBikeData(userId: string) {
+async function getBikeData(userId: string): Promise<Record<string, unknown> | null> {
   const userRef = doc(db, "users", userId);
   const docSnap = await getDoc(userRef);
   if (docSnap.exists()) {
-    return docSnap.data().bike || null;
+    return (docSnap.data().bike as Record<string, unknown>) || null;
   } else {
     return null;
-  }
-}
-
-/* =======================
-   FUNÇÕES PARA MANUTENÇÃO (detalhes)
-   ======================= */
-
-// Interface (opcional) para Manutenção
-export interface Manutencao {
-  id: string;
-  tipo: string;
-  data: string;
-  hora: string;
-  km: number;
-  valor: number;
-  local: string;
-  observacoes?: string;
-}
-
-/**
- * Registra uma nova manutenção para o usuário.
- * @param {string} userId - ID do usuário.
- * @param {Object} manutencaoData - Dados da manutenção.
- * Exemplo:
- * {
- *   tipo: "troca de óleo",
- *   data: "01/03/2025",
- *   hora: "09:30",
- *   km: 5000,
- *   valor: 150,
- *   local: "Posto X",
- *   observacoes: "Troca com filtro novo"
- * }
- */
-async function addManutencao(userId: string, manutencaoData: any) {
-  try {
-    const manutencoesRef = collection(doc(db, "users", userId), "manutencoes");
-    const docRef = await addDoc(manutencoesRef, manutencaoData);
-    console.log("Manutenção registrada com sucesso!");
-    return docRef.id;
-  } catch (error) {
-    console.error("Erro ao registrar manutenção:", error);
-    throw error;
-  }
-}
-
-/**
- * Obtém as manutenções do usuário, ordenadas pela data (mais recentes primeiro).
- * @param {string} userId - ID do usuário.
- * @returns {Promise<Manutencao[]>} - Array de manutenções.
- */
-async function getManutencoes(userId: string): Promise<Manutencao[]> {
-  try {
-    const manutencoesRef = collection(doc(db, "users", userId), "manutencoes");
-    const q = query(manutencoesRef, orderBy("data", "desc"));
-    const querySnapshot = await getDocs(q);
-    const manutencoes: Manutencao[] = [];
-    querySnapshot.forEach((docSnap) => {
-      manutencoes.push({ id: docSnap.id, ...docSnap.data() } as Manutencao);
-    });
-    return manutencoes;
-  } catch (error) {
-    console.error("Erro ao buscar manutenções:", error);
-    throw error;
   }
 }
 
@@ -240,39 +177,18 @@ async function getManutencoes(userId: string): Promise<Manutencao[]> {
    FUNÇÕES PARA ABASTECIMENTOS
    ======================= */
 
-/**
- * Interface para o abastecimento (combustível)
- * Campos:
- *  - data: string (formato "dd/mm/aaaa")
- *  - hora: string (ex: "14:30")
- *  - litros: number
- *  - posto: string
- *  - valorLitro: number
- */
+// Interface para o abastecimento (combustível)
 export interface Combustivel {
   id: string;
-  data: string;
-  hora: string;
+  data: string;      // formato "dd/mm/aaaa"
+  hora: string;      // ex: "14:30"
   litros: number;
   posto: string;
   valorLitro: number;
 }
 
-/**
- * Registra um novo abastecimento.
- * @param {string} userId - ID do usuário.
- * @param {Object} fuelingData - Objeto contendo os dados do abastecimento.
- * Exemplo:
- * {
- *   data: new Date().toLocaleDateString("pt-BR"),
- *   hora: "14:30",
- *   litros: 15.5,
- *   posto: "Posto X",
- *   valorLitro: 3.99
- * }
- * @returns {Promise<string>} - Retorna o ID do documento registrado.
- */
-async function addFueling(userId: string, fuelingData: any) {
+// Função para adicionar um abastecimento
+async function addFueling(userId: string, fuelingData: Record<string, unknown>): Promise<string> {
   try {
     const fuelingsRef = collection(db, "users", userId, "abastecimentos");
     const docRef = await addDoc(fuelingsRef, fuelingData);
@@ -284,26 +200,17 @@ async function addFueling(userId: string, fuelingData: any) {
   }
 }
 
-/**
- * Obtém os abastecimentos de um usuário.
- * Se filterDate for informado, espera um objeto Date e converte para string no formato "pt-BR"
- * para filtrar os documentos cujo campo "data" esteja dentro desse dia.
- * @param {string} userId - ID do usuário.
- * @param {Date|null} filterDate - Data para filtrar os abastecimentos (opcional).
- * @returns {Promise<Combustivel[]>} - Retorna um array de abastecimentos.
- */
+// Função para obter os abastecimentos de um usuário
 async function getFuelings(userId: string, filterDate: Date | null = null): Promise<Combustivel[]> {
   try {
     let colRef = collection(db, "users", userId, "abastecimentos");
     let q;
-
     if (filterDate) {
       const startOfDay = new Date(filterDate);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(filterDate);
       endOfDay.setHours(23, 59, 59, 999);
 
-      // Converter as datas para o mesmo formato utilizado no registro
       const startStr = startOfDay.toLocaleDateString("pt-BR");
       const endStr = endOfDay.toLocaleDateString("pt-BR");
 
@@ -329,12 +236,8 @@ async function getFuelings(userId: string, filterDate: Date | null = null): Prom
   }
 }
 
-/**
- * Deleta um abastecimento.
- * @param {string} userId - ID do usuário.
- * @param {string} fuelingId - ID do abastecimento a ser deletado.
- */
-async function deleteFueling(userId: string, fuelingId: string) {
+// Função para deletar um abastecimento
+async function deleteFueling(userId: string, fuelingId: string): Promise<void> {
   try {
     const fuelingRef = doc(db, "users", userId, "abastecimentos", fuelingId);
     await deleteDoc(fuelingRef);
@@ -350,25 +253,25 @@ async function deleteFueling(userId: string, fuelingId: string) {
    ======================= */
 
 // Função para salvar as configurações do usuário
-async function saveUserConfig(userId: string, configData: any) {
+async function saveUserConfig(userId: string, configData: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
   await setDoc(doc(userRef, "configurations", "user"), configData, { merge: true });
 }
 
 // Função para salvar as configurações de ganhos do usuário
-async function saveEarningsConfig(userId: string, configData: any) {
+async function saveEarningsConfig(userId: string, configData: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
   await setDoc(doc(userRef, "configurations", "earnings"), configData, { merge: true });
 }
 
 // Função para salvar as configurações do aplicativo do usuário
-async function saveAppConfig(userId: string, configData: any) {
+async function saveAppConfig(userId: string, configData: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
   await setDoc(doc(userRef, "configurations", "app"), configData, { merge: true });
 }
 
 // Função para obter as configurações do usuário
-async function getUserConfig(userId: string) {
+async function getUserConfig(userId: string): Promise<Record<string, unknown> | null> {
   const userRef = doc(db, "users", userId);
   const configRef = doc(userRef, "configurations", "user");
   const docSnap = await getDoc(configRef);
@@ -380,7 +283,7 @@ async function getUserConfig(userId: string) {
 }
 
 // Função para obter as configurações de ganhos do usuário
-async function getEarningsConfig(userId: string) {
+async function getEarningsConfig(userId: string): Promise<Record<string, unknown> | null> {
   const userRef = doc(db, "users", userId);
   const configRef = doc(userRef, "configurations", "earnings");
   const docSnap = await getDoc(configRef);
@@ -392,7 +295,7 @@ async function getEarningsConfig(userId: string) {
 }
 
 // Função para obter as configurações do aplicativo do usuário
-async function getAppConfig(userId: string) {
+async function getAppConfig(userId: string): Promise<Record<string, unknown> | null> {
   const userRef = doc(db, "users", userId);
   const configRef = doc(userRef, "configurations", "app");
   const docSnap = await getDoc(configRef);
@@ -407,7 +310,7 @@ async function getAppConfig(userId: string) {
    FUNÇÃO PARA LOGOUT
    ======================= */
 
-async function logout() {
+async function logout(): Promise<void> {
   try {
     await signOut(auth);
     console.log("User logged out successfully.");
@@ -441,11 +344,9 @@ export {
   getUserConfig,
   getEarningsConfig,
   getAppConfig,
-  adicionarManutencao,
-  obterManutencoes,
-  addManutencao,
-  getManutencoes,
-  deleteManutencao,
+  getMaintenance,
+  addMaintenance,
+  deleteMaintenance,
   deleteFueling,
   logout,
 };

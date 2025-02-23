@@ -55,7 +55,7 @@ async function addEarning(userId: string, earning: any) {
 }
 
 // Função para obter os ganhos de um usuário com filtro de datas
-export async function getEarnings(
+async function getEarnings(
   userId: string,
   startDate: Date | null = null,
   endDate: Date | null = null
@@ -104,7 +104,7 @@ export async function getEarnings(
 }
 
 // Função para deletar um ganho
-export async function deleteEarning(userId: string, earningId: string) {
+async function deleteEarning(userId: string, earningId: string) {
   try {
     const earningRef = doc(db, "users", userId, "earnings", earningId);
     await deleteDoc(earningRef);
@@ -139,6 +139,18 @@ async function obterManutencoes(userId: string) {
   return manutencoes;
 }
 
+// Função para deletar uma manutenção
+async function deleteManutencao(userId: string, manutencaoId: string) {
+  try {
+    const manutencaoRef = doc(db, "users", userId, "manutencoes", manutencaoId);
+    await deleteDoc(manutencaoRef);
+    console.log(`Manutenção com ID ${manutencaoId} deletada com sucesso.`);
+  } catch (error) {
+    console.error("Erro ao deletar manutenção:", error);
+    throw error;
+  }
+}
+
 /* =======================
    FUNÇÕES PARA A MOTO
    ======================= */
@@ -160,12 +172,10 @@ async function getBikeData(userId: string) {
   }
 }
 
-
 /* =======================
-   FUNÇÕES PARA Manutenção
+   FUNÇÕES PARA MANUTENÇÃO (detalhes)
    ======================= */
 
-   
 // Interface (opcional) para Manutenção
 export interface Manutencao {
   id: string;
@@ -193,7 +203,7 @@ export interface Manutencao {
  *   observacoes: "Troca com filtro novo"
  * }
  */
-export async function addManutencao(userId, manutencaoData) {
+async function addManutencao(userId: string, manutencaoData: any) {
   try {
     const manutencoesRef = collection(doc(db, "users", userId), "manutencoes");
     const docRef = await addDoc(manutencoesRef, manutencaoData);
@@ -210,14 +220,14 @@ export async function addManutencao(userId, manutencaoData) {
  * @param {string} userId - ID do usuário.
  * @returns {Promise<Manutencao[]>} - Array de manutenções.
  */
-export async function getManutencoes(userId) {
+async function getManutencoes(userId: string): Promise<Manutencao[]> {
   try {
     const manutencoesRef = collection(doc(db, "users", userId), "manutencoes");
     const q = query(manutencoesRef, orderBy("data", "desc"));
     const querySnapshot = await getDocs(q);
-    const manutencoes = [];
+    const manutencoes: Manutencao[] = [];
     querySnapshot.forEach((docSnap) => {
-      manutencoes.push({ id: docSnap.id, ...docSnap.data() });
+      manutencoes.push({ id: docSnap.id, ...docSnap.data() } as Manutencao);
     });
     return manutencoes;
   } catch (error) {
@@ -225,29 +235,6 @@ export async function getManutencoes(userId) {
     throw error;
   }
 }
-
-/**
- * Deleta uma manutenção.
- * @param {string} userId - ID do usuário.
- * @param {string} manutencaoId - ID da manutenção a ser deletada.
- */
-export async function deleteManutencao(userId, manutencaoId) {
-  try {
-    const manutencaoRef = doc(db, "users", userId, "manutencoes", manutencaoId);
-    await deleteDoc(manutencaoRef);
-    console.log(`Manutenção com ID ${manutencaoId} deletada com sucesso.`);
-  } catch (error) {
-    console.error("Erro ao deletar manutenção:", error);
-    throw error;
-  }
-}
-/* =======================
-   FIM FUNÇÕES PARA Manutenção
-   ======================= */
-
-
-
-
 
 /* =======================
    FUNÇÕES PARA ABASTECIMENTOS
@@ -285,7 +272,7 @@ export interface Combustivel {
  * }
  * @returns {Promise<string>} - Retorna o ID do documento registrado.
  */
-export async function addFueling(userId, fuelingData) {
+async function addFueling(userId: string, fuelingData: any) {
   try {
     const fuelingsRef = collection(db, "users", userId, "abastecimentos");
     const docRef = await addDoc(fuelingsRef, fuelingData);
@@ -305,7 +292,7 @@ export async function addFueling(userId, fuelingData) {
  * @param {Date|null} filterDate - Data para filtrar os abastecimentos (opcional).
  * @returns {Promise<Combustivel[]>} - Retorna um array de abastecimentos.
  */
-export async function getFuelings(userId, filterDate = null) {
+async function getFuelings(userId: string, filterDate: Date | null = null): Promise<Combustivel[]> {
   try {
     let colRef = collection(db, "users", userId, "abastecimentos");
     let q;
@@ -331,9 +318,9 @@ export async function getFuelings(userId, filterDate = null) {
     }
 
     const querySnapshot = await getDocs(q);
-    const fuelings = [];
+    const fuelings: Combustivel[] = [];
     querySnapshot.forEach((docSnap) => {
-      fuelings.push({ id: docSnap.id, ...docSnap.data() });
+      fuelings.push({ id: docSnap.id, ...docSnap.data() } as Combustivel);
     });
     return fuelings;
   } catch (error) {
@@ -347,7 +334,7 @@ export async function getFuelings(userId, filterDate = null) {
  * @param {string} userId - ID do usuário.
  * @param {string} fuelingId - ID do abastecimento a ser deletado.
  */
-export async function deleteFueling(userId, fuelingId) {
+async function deleteFueling(userId: string, fuelingId: string) {
   try {
     const fuelingRef = doc(db, "users", userId, "abastecimentos", fuelingId);
     await deleteDoc(fuelingRef);
@@ -357,7 +344,6 @@ export async function deleteFueling(userId, fuelingId) {
     throw error;
   }
 }
-
 
 /* =======================
    FUNÇÕES PARA CONFIGURAÇÕES
@@ -421,8 +407,7 @@ async function getAppConfig(userId: string) {
    FUNÇÃO PARA LOGOUT
    ======================= */
 
-// Função para fazer logout
-export const logout = async () => {
+async function logout() {
   try {
     await signOut(auth);
     console.log("User logged out successfully.");
@@ -430,7 +415,7 @@ export const logout = async () => {
     console.error("Error logging out:", error);
     throw error;
   }
-};
+}
 
 /* =======================
    EXPORTAÇÕES
@@ -458,4 +443,9 @@ export {
   getAppConfig,
   adicionarManutencao,
   obterManutencoes,
+  addManutencao,
+  getManutencoes,
+  deleteManutencao,
+  deleteFueling,
+  logout,
 };

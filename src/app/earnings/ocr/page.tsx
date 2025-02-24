@@ -13,14 +13,14 @@ import { useAuth } from '@/components/USER/Auth/AuthContext';
 
 interface Corrida {
   id?: string;
-  valor: string;       // Valor principal (em string, ex: "22.16")
-  taxaExtra?: string;  // Taxa extra (ex: "2.00")
-  tempo: string;       // Tempo (ex: "32 min 57 seg")
-  km: string;          // Quilometragem (ex: "21.06")
-  date?: string;       // Data no formato "dd/mm/yyyy"
-  hora?: string;       // Hora no formato "hh:mm"
-  tipo?: string;       // Tipo da corrida (Entrega, Passageiro)
-  platform?: string;   // Plataforma (Uber, 99, etc.)
+  valor: string;       // Ex: "22.16"
+  taxaExtra?: string;  // Ex: "2.00" (se for taxa extra)
+  tempo: string;       // Ex: "32 min 57 seg"
+  km: string;          // Ex: "21.06"
+  date?: string;       // No formato "dd/mm/yyyy"
+  hora?: string;       // No formato "hh:mm"
+  tipo?: string;       // Ex: "entrega" ou "passageiro"
+  platform?: string;   // Ex: "uber", "99", etc.
 }
 
 interface CorridaCardProps {
@@ -164,7 +164,7 @@ function parseDuration(tempo: string): number {
   return minutes + seconds / 60;
 }
 
-// Converte data extraída (ex: "sáb., 22 de fev." ou similar) para "22/02/2025"
+// Converte data extraída (ex: "sáb., 22 de fev." ou similar) para "dd/mm/yyyy"
 function parseData(dataStr: string): string {
   const meses: Record<string, string> = {
     jan: "01",
@@ -192,6 +192,7 @@ function parseData(dataStr: string): string {
   return "";
 }
 
+// Página principal de OCR Earnings
 export default function OcrEarningsPage() {
   const { currentUser } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -244,22 +245,24 @@ export default function OcrEarningsPage() {
     }
   };
 
+  // Novo parseCorridas utilizando for-of para maior controle
   function parseCorridas(text: string): Corrida[] {
     const cleanedText = text.replace(/\s{2,}/g, ' ').trim();
     const blocks = cleanedText.split(/(?=R\$)/);
     const result: Corrida[] = [];
     let currentRace: Corrida | null = null;
-
-    blocks.forEach((block) => {
+    
+    for (const block of blocks) {
       const b = block.trim();
-      if (!b) return;
-
+      if (!b) continue;
+      
       const valorMatch = b.match(/R\$[\s]*([\d.,]+)/);
       const tempoMatch = b.match(/(\d+\s*(?:min(?:utos)?)\s*\d+\s*(?:seg(?:undos)?))/i);
       const kmMatch = b.match(/(\d+[.,]\d+)\s*km/i);
       const dateMatch = b.match(/(?:dom|seg|ter|qua|qui|sex|s[aá]b)[^0-9]*(\d{1,2}\/\d{1,2}\/\d{4})/);
       const horaMatch = b.match(/(\d{1,2}:\d{2})/);
-
+      
+      // Se o bloco contém um valor
       if (valorMatch) {
         let valorStr = valorMatch[1].trim();
         if (valorStr.includes(',') || valorStr.includes('.')) {
@@ -271,24 +274,29 @@ export default function OcrEarningsPage() {
             valorStr = valorStr.slice(0, -2) + '.' + valorStr.slice(-2);
           }
         }
-
-        if (currentRace) {
+        
+        // Se o bloco não contém tempo nem km, ignore-o (exceto se for taxa extra)
+        if (!tempoMatch && !kmMatch) {
           const numericValor = parseFloat(valorStr);
-          // Se não houver tempo nem km e o valor é pequeno (< 10), considere taxa extra
-          if (!tempoMatch && !kmMatch && numericValor < 10) {
+          if (numericValor < 10 && currentRace) {
+            // Adiciona como taxa extra à corrida anterior
             currentRace.taxaExtra = valorStr;
             if (dateMatch) currentRace.date = parseData(dateMatch[0]);
             if (horaMatch) currentRace.hora = horaMatch[1];
-            return;
-          } else {
-            // Se a corrida atual não tiver tempo e km, ignoramos (pois pode ser "dinheiro recebido")
-            if (currentRace.tempo || currentRace.km) {
-              result.push(currentRace);
-            }
-            currentRace = null;
           }
+          continue;
         }
-
+        
+        // Se já existe uma corrida em andamento, finalize-a
+        if (currentRace) {
+          // Apenas adicione se tiver tempo ou km
+          if (currentRace.tempo || currentRace.km) {
+            result.push(currentRace);
+          }
+          currentRace = null;
+        }
+        
+        // Cria nova corrida
         currentRace = {
           valor: valorStr,
           tempo: tempoMatch ? tempoMatch[1] : '',
@@ -312,97 +320,57 @@ export default function OcrEarningsPage() {
           currentRace.hora = horaMatch[1];
         }
       }
-    });
-    if (currentRace) {
-      // Só adiciona se a corrida tiver informações essenciais (tempo ou km)
-      if (currentRace.tempo || currentRace.km) {
-        result.push(currentRace);
-      }
+    }
+    if (currentRace && (currentRace.tempo || currentRace.km)) {
+      result.push(currentRace);
     }
     return result;
   }
 
-  function combineDateTime(dateStr: string, timeStr: string): Date {
-    const [day, month, year] = dateStr.split('/').map(Number);
-    const [hour, minute] = timeStr.split(':').map(Number);
-    return new Date(year, month - 1, day, hour, minute);
-  }
-
-  function parseDuration(tempo: string): number {
-    const minMatch = tempo.match(/(\d+)\s*min/);
-    const secMatch = tempo.match(/(\d+)\s*seg/);
-    const minutes = minMatch ? parseInt(minMatch[1], 10) : 0;
-    const seconds = secMatch ? parseInt(secMatch[1], 10) : 0;
-    return minutes + seconds / 60;
-  }
-
-  function parseData(dataStr: string): string {
-    const meses: Record<string, string> = {
-      jan: "01",
-      fev: "02",
-      mar: "03",
-      abr: "04",
-      mai: "05",
-      jun: "06",
-      jul: "07",
-      ago: "08",
-      set: "09",
-      out: "10",
-      nov: "11",
-      dez: "12"
-    };
-    const regex = /(?:dom|seg|ter|qua|qui|sex|s[aá]b)[^0-9]*(\d{1,2}) de ([a-zçãé]+)(?: de (\d{4}))?/i;
-    const match = dataStr.match(regex);
-    if (match) {
-      const day = match[1].padStart(2, '0');
-      const monthAbbr = match[2].substring(0, 3).toLowerCase();
-      const month = meses[monthAbbr] || "01";
-      const year = match[3] ? match[3] : new Date().getFullYear().toString();
-      return `${day}/${month}/${year}`;
-    }
-    return "";
-  }
-
-  const handleSaveRace = async (race: Corrida) => {
+  function handleSaveRace(race: Corrida) {
     if (!currentUser) return;
-    try {
-      // Se data e hora estiverem presentes, combine-as; senão, use a data atual
-      const raceDate = (race.date && race.hora) ? combineDateTime(race.date, race.hora) : new Date();
-      const payload = {
-        amount: parseFloat(race.valor),
-        date: raceDate, // Salvamos como objeto Date (o Firebase converte para Timestamp)
-        description: "",
-        duration: race.tempo ? parseDuration(race.tempo) : 0,
-        mileage: race.km ? parseFloat(race.km) : 0,
-        platform: race.platform || "",
-        tip: race.taxaExtra ? parseFloat(race.taxaExtra) : 0,
-      };
-      await addEarning(currentUser.uid, payload);
-      setCorridas(prev => prev.filter(r => r !== race));
-      alert("Corrida salva com sucesso!");
-    } catch (error) {
-      console.error("Erro ao salvar corrida:", error);
-      alert("Erro ao salvar corrida.");
-    }
-  };
+    // Converte data e hora para objeto Date; se não houver, usa a data atual
+    const raceDate = (race.date && race.hora) ? combineDateTime(race.date, race.hora) : new Date();
+    const payload = {
+      amount: parseFloat(race.valor),
+      date: raceDate,
+      description: "",
+      duration: race.tempo ? parseDuration(race.tempo) : 0,
+      mileage: race.km ? parseFloat(race.km) : 0,
+      platform: race.platform || "",
+      tip: race.taxaExtra ? parseFloat(race.taxaExtra) : 0,
+    };
+    addEarning(currentUser.uid, payload)
+      .then(() => {
+        // Remove a corrida salva com efeito de fade (aqui removemos imediatamente)
+        setCorridas(prev => prev.filter(r => r !== race));
+        alert("Corrida salva com sucesso!");
+      })
+      .catch((error) => {
+        console.error("Erro ao salvar corrida:", error);
+        alert("Erro ao salvar corrida.");
+      });
+  }
 
-  const handleDelete = async (index: number) => {
+  const handleDelete = (index: number) => {
     const race = corridas[index];
     if (!currentUser || !race.id) {
       setCorridas(prev => prev.filter((_, i) => i !== index));
       return;
     }
-    try {
-      await deleteEarning(currentUser.uid, race.id);
-      setCorridas(prev => prev.filter((_, i) => i !== index));
-      alert("Corrida deletada com sucesso!");
-    } catch (error) {
-      alert("Erro ao deletar corrida.");
-    }
+    deleteEarning(currentUser.uid, race.id)
+      .then(() => {
+        setCorridas(prev => prev.filter((_, i) => i !== index));
+        alert("Corrida deletada com sucesso!");
+      })
+      .catch((error) => {
+        alert("Erro ao deletar corrida.");
+      });
   };
 
-  const handleUpdateRace = async (index: number, updatedRace: Corrida) => {
-    await handleSaveRace(updatedRace);
+  const handleUpdateRace = (index: number, updatedRace: Corrida) => {
+    // Para atualização, neste exemplo, salvamos como novo registro
+    handleSaveRace(updatedRace);
   };
 
   return (
@@ -433,8 +401,8 @@ export default function OcrEarningsPage() {
       )}
 
       {corridas.length > 0 && (
-        <div className="mt-4 space-y-4">
-          <h2 className="text-lg font-semibold">Corridas Extraídas</h2>
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+          <h2 className="col-span-full text-lg font-semibold">Corridas Extraídas</h2>
           {corridas.map((c, index) => (
             <div key={index} className="space-y-2">
               <CorridaCard
@@ -443,7 +411,7 @@ export default function OcrEarningsPage() {
                 onDelete={handleDelete}
                 onSave={handleUpdateRace}
               />
-              <Button onClick={() => handleSaveRace(c)} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={() => handleSaveRace(c)} className="bg-green-600 hover:bg-green-700 w-full">
                 Salvar Corrida #{index + 1}
               </Button>
             </div>

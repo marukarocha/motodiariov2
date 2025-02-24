@@ -12,6 +12,7 @@ import {
   where,
   orderBy,
   Timestamp,
+  updateDoc
 } from "firebase/firestore";
 import { getAuth, signOut } from "firebase/auth";
 
@@ -31,6 +32,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+
 /* =======================
    FUNÇÕES PARA EARNINGS
    ======================= */
@@ -48,71 +50,80 @@ export interface Earning {
 }
 
 // Função para adicionar um ganho
-async function addEarning(userId: string, earning: Record<string, unknown>): Promise<void> {
+export async function addEarning(userId: string, earning: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
   const earningsRef = collection(userRef, "earnings");
   await addDoc(earningsRef, earning);
 }
 
 // Função para obter os ganhos de um usuário com filtro de datas
-async function getEarnings(
-  userId: string,
-  startDate: Date | null = null,
-  endDate: Date | null = null
-): Promise<Earning[]> {
-  console.log("getEarnings called with:", { userId, startDate, endDate });
+export async function getEarnings(userId: string, startDate: Date | null = null, endDate: Date | null = null): Promise<Earning[]> {
   try {
     let earningsRef = collection(db, "users", userId, "earnings");
-    let q: ReturnType<typeof query>;
+    let q;
 
     if (startDate && endDate) {
       const startTimestamp = Timestamp.fromDate(startDate);
       const endTimestamp = Timestamp.fromDate(endDate);
-      const adjustedEndTimestamp = new Timestamp(
-        endTimestamp.seconds + 86399,
-        endTimestamp.nanoseconds
-      );
       q = query(
         earningsRef,
         where("date", ">=", startTimestamp),
-        where("date", "<", adjustedEndTimestamp),
-        orderBy("date", "asc")
+        where("date", "<=", endTimestamp),
+        orderBy("date", "desc")
       );
     } else {
-      q = query(earningsRef, orderBy("date", "asc"));
+      q = query(earningsRef, orderBy("date", "desc"));
     }
 
     const querySnapshot = await getDocs(q);
-    console.log("getEarnings: querySnapshot size:", querySnapshot.size);
     const earnings: Earning[] = [];
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      console.log("getEarnings: Document data:", data);
       earnings.push({
         id: docSnap.id,
         ...data,
         date: (data.date as Timestamp).toDate(),
       } as Earning);
     });
-    console.log("getEarnings: Returning earnings:", earnings);
+
     return earnings;
   } catch (error) {
     console.error("Erro ao obter ganhos:", error);
     throw error;
   }
 }
-
-// Função para deletar um ganho
-async function deleteEarning(userId: string, earningId: string): Promise<void> {
+// 📌 Atualiza um registro de ganho no Firestore
+export async function updateEarning(userId: string, earningId: string, updatedData: Partial<Earning>) {
   try {
     const earningRef = doc(db, "users", userId, "earnings", earningId);
-    await deleteDoc(earningRef);
-    console.log(`Earning with ID ${earningId} deleted successfully.`);
+    const docSnap = await getDoc(earningRef);
+
+    if (!docSnap.exists()) {
+      throw new Error(`Nenhum documento encontrado para o ID: ${earningId}`);
+    }
+
+    await updateDoc(earningRef, updatedData);
+    console.log("Ganho atualizado com sucesso!");
   } catch (error) {
-    console.error("Erro ao deletar ganho:", error);
+    console.error("Erro ao atualizar ganho:", error);
     throw error;
   }
 }
+
+
+// 📌 Deleta um registro de ganho no Firestore
+export async function deleteEarning(userId: string, earningId: string) {
+  try {
+    const earningRef = doc(db, "users", userId, "earnings", earningId);
+    await deleteDoc(earningRef);
+    console.log("Ganho deletado com sucesso!");
+  } catch (error) {
+    console.error("Erro ao excluir ganho:", error);
+    throw error;
+  }
+}
+
+
 
 /* =======================
    FUNÇÕES PARA MAINTENANCE
@@ -331,9 +342,7 @@ export {
   collection,
   addDoc,
   getDocs,
-  addEarning,
-  deleteEarning,
-  getEarnings,
+
   registerBike,
   getBikeData,
   addFueling,

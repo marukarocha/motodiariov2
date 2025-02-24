@@ -179,54 +179,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
   // Definição das colunas
   const columns = React.useMemo<ColumnDef<Earning>[]>(
     () => [
-        {
-            id: "actions",
-            header: "Ações",
-            cell: ({ row }) => {
-              const earning = row.original;
-              if (editingRowId === row.original.id) {
-                return (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSaveEdit(earning.id)}
-                      title="Salvar edição"
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={handleCancelEdit}
-                      title="Cancelar"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                );
-              }
-              return (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Ações</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-gray-800">
-                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => handleDelete(earning.id)}>
-                      <Trash className="mr-2 h-4 w-4 text-destructive" />
-                      Deletar
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleEdit(earning)}>
-                      Editar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
-            },
-          },
+       
       {
         accessorKey: "date",
         header: ({ column }) => (
@@ -373,8 +326,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           const rideType = row.original.rideType;
           return (
             <div className="flex flex-col gap-1">
-              <Badge variant="secondary">{platform}</Badge>
-              {rideType && <Badge variant="outline">{rideType}</Badge>}
+              {rideType && <Badge variant="outline">{platform} - {rideType}</Badge>}
             </div>
           );
         },
@@ -416,10 +368,9 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           const hourlyRate = hours > 0 ? amount / hours : 0;
           return (
             <div className="flex flex-col gap-1">
-              <Badge variant="secondary">{duration || "-"}</Badge>
               {hours > 0 && (
                 <Badge variant="outline" className="flex items-center gap-1">
-                   R$ {hourlyRate.toFixed(2)}/h
+                   {duration || "-"} - R$ {hourlyRate.toFixed(2)}/h
                 </Badge>
               )}
             </div>
@@ -436,6 +387,54 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
               amount={earning.amount}
               mileage={earning.mileage}
             />
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Ações",
+        cell: ({ row }) => {
+          const earning = row.original;
+          if (editingRowId === row.original.id) {
+            return (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSaveEdit(earning.id)}
+                  title="Salvar edição"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleCancelEdit}
+                  title="Cancelar"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            );
+          }
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Ações</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-gray-800">
+                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleDelete(earning.id)}>
+                  <Trash className="mr-2 h-4 w-4 text-destructive" />
+                  Deletar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleEdit(earning)}>
+                  Editar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           );
         },
       },
@@ -545,13 +544,9 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
-                  key={row.id}
-                  className={
-                    row.id === recentlyUpdatedRowId
-                      ? "bg-green-500/50 transition-colors duration-1000"
-                      : ""
-                  }
-                >
+                key={row.id}
+                className="hover:bg-stone-950 active:bg-stone-950 transition-colors"
+              >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -84,8 +84,10 @@ export default function FuelingsPage() {
     <div className="container mx-auto p-4">
       <Header />
       <h1 className="text-2xl font-bold mb-4">Seus Abastecimentos</h1>
+      <div className='flex m-5'>
       <RegisterFuelingButton onFuelingAdded={fetchData} />
       <DateFilter onDateSelected={(d) => setSelectedDate(d)} />
+      </div>
       <FuelingsSummary fuelings={fuelingsData} />
       <Card className="mt-6">
         <CardHeader>

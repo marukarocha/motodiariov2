@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import RegisterFuelings from './RegisterFuelings';
+import { PlusCircleIcon } from 'lucide-react';
+
 import {
   Dialog,
   DialogContent,
@@ -22,7 +24,9 @@ export function RegisterFuelingButton({ onFuelingAdded }: RegisterFuelingButtonP
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Registrar Abastecimento</Button>
+        <Button className='mr-3 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded'>
+        <PlusCircleIcon className="h-4 w-4 mr-2" />
+          Registrar Abastecimento</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

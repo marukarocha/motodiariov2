@@ -65,7 +65,7 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
       await addMaintenance(currentUser!.uid, manutencao);
       alert(`${maintenanceType} registrada com sucesso!`);
       onClose();
-      router.push("/manutencoes");
+      router.push("/maintenance");
     } catch (error) {
       console.error("Erro ao registrar manutenção:", error);
       alert("Erro ao registrar manutenção. Tente novamente.");

@@ -16,7 +16,7 @@ import { RegisterEarningButton } from '@/app/earnings/RegisterEarningButton';
 import { EarningsSummary } from '@/app/earnings/EarningsSummary';
 import { DateFilter } from '@/components/DataFilter';
 import { useToast } from '@/hooks/use-toast';
-
+import Link from "next/link";
 interface Earning {
   id: string;
   amount: number;
@@ -158,6 +158,11 @@ export default function EarningsPage() {
         averageEarningsPerHour={averageEarningsPerHour}
         averageEarningsPerDay={averageEarningsPerDay}
       />
+     
+
+<Link href="/earnings/ocr" className="text-primary underline">
+  Processar Print de Corridas
+</Link>
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Lista de Ganhos</CardTitle>

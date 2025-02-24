@@ -10,7 +10,8 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { FaOilCan,  FaCogs, FaTools, FaMotorcycle } from "react-icons/fa";
+import { GiFlatTire, GiPokecog } from "react-icons/gi";
+import { FaOilCan,  FaCogs, FaTools } from "react-icons/fa";
 import RegisterManutencaoForm from "./RegisterManutencaoForm";
 
 interface MaintenanceOption {
@@ -21,8 +22,8 @@ interface MaintenanceOption {
 
 const maintenanceOptions: MaintenanceOption[] = [
   { label: "Troca de Óleo", icon: <FaOilCan size={48} />, type: "troca de óleo" },
-  { label: "Troca de Pneus", icon: <FaMotorcycle size={48} />, type: "troca de pneus" },
-  { label: "Troca de Relação", icon: <FaCogs size={48} />, type: "troca de relação" },
+  { label: "Troca de Pneus", icon: <GiFlatTire size={48} />, type: "troca de pneus" },
+  { label: "Troca de Relação", icon: <GiPokecog size={48} />, type: "troca de relação" },
   { label: "Manutenção do Motor", icon: <FaTools size={48} />, type: "manutenção do motor" },
 ];
 

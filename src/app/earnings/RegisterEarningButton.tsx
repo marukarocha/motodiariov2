@@ -18,7 +18,7 @@ export function RegisterEarningButton({ onEarningAdded }: RegisterEarningButtonP
       <DialogTrigger asChild>
         <Button 
           onClick={() => setIsOpen(true)}
-          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4"
+          className="bg-green-500 mr-2 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4"
         >
           <PlusCircleIcon className="h-4 w-4 mr-2" />
           Registrar Ganho

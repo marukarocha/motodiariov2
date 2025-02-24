@@ -161,7 +161,7 @@ function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFuelingsProps) {
           />
         </div>
         <DialogFooter>
-          <Button variant="default" type="submit" className="w-full">
+          <Button variant="default" type="submit" className="w-full bg-green-500">
             Registrar
           </Button>
         </DialogFooter>

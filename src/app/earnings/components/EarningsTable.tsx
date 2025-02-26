@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -17,25 +17,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import {
   ArrowUpDown,
   ChevronDown,
-  MoreHorizontal,
   Trash,
   Check,
+  Pencil,
   X,
-  Clock,
-  DollarSign,
+  MoreHorizontal,
 } from "lucide-react";
-
 import {
   Table,
   TableBody,
@@ -44,10 +33,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import PerformanceThermometer from "@/app/earnings/components/termometro";
+import Desempenho from "@/app/earnings/components/desempenho";
 import { deleteEarning, updateEarning } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useLongPress } from "@/hooks/useLongPress";
 
 export type Earning = {
   id: string;
@@ -55,8 +45,8 @@ export type Earning = {
   amount: number;
   mileage: number;
   platform: string;
-  rideType?: string; // Passagem, Entrega, etc
-  duration?: string; // Ex.: "15 min", etc.
+  rideType?: string;
+  duration?: string;
 };
 
 interface DataTableEarningsProps {
@@ -68,37 +58,24 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
-  // Estados do Tanstack React Table
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  // Estados para edição inline
   const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
   const [editingRowData, setEditingRowData] = React.useState<Partial<Earning> | null>(null);
   const [originalEditingRowData, setOriginalEditingRowData] = React.useState<Partial<Earning> | null>(null);
-
-  // Estado para identificar a linha recentemente atualizada
   const [recentlyUpdatedRowId, setRecentlyUpdatedRowId] = React.useState<string | null>(null);
 
-  // Opções pré-definidas
-  const platformOptions = ['Uber', '99', 'Ifood', 'Indrive', 'Particular'];
-  const rideTypeOptions = ['Passageiro', 'Entrega', 'Compras', 'Comida'];
-  const durationOptions = ['15 min', '30 min', '45 min', '1 hora', '1h 30min', '2 horas', '3 horas ou mais'];
+  const platformOptions = ["Uber", "99", "Ifood", "Indrive", "Particular"];
+  const rideTypeOptions = ["Passageiro", "Entrega", "Compras", "Comida"];
+  const durationOptions = ["15 min", "30 min", "45 min", "1 hora", "1h 30min", "2 horas", "3 horas ou mais"];
 
-  // Mapeamento para converter duração em horas (para cálculo do ganho/hora)
-  const durationToHours: Record<string, number> = {
-    "15 min": 0.25,
-    "30 min": 0.5,
-    "45 min": 0.75,
-    "1 hora": 1,
-    "1h 30min": 1.5,
-    "2 horas": 2,
-    "3 horas ou mais": 3,
-  };
+  // Hook para detectar long press (já importado via useLongPress)
+  // Permite entrar em modo de edição com toque prolongado
+  // onDoubleClick também ativa a edição
 
-  // Função para iniciar a edição (armazena os dados originais)
   const handleEdit = (earning: Earning) => {
     setEditingRowId(earning.id);
     const dateISO =
@@ -109,25 +86,21 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
         : "";
     const editingData = { ...earning, date: dateISO };
     setEditingRowData(editingData);
-    setOriginalEditingRowData(editingData); // Armazena o valor original
+    setOriginalEditingRowData(editingData);
   };
 
-  // Função para cancelar edição
   const handleCancelEdit = () => {
     setEditingRowId(null);
     setEditingRowData(null);
     setOriginalEditingRowData(null);
   };
 
-  // Função para salvar edição
   const handleSaveEdit = async (earningId: string) => {
     if (!currentUser) {
       alert("Usuário não autenticado!");
       return;
     }
     let updatedData: Partial<Earning> = { ...editingRowData };
-
-    // Se o campo data não foi alterado, removemos-o da atualização
     if (
       editingRowData?.date &&
       originalEditingRowData &&
@@ -144,23 +117,20 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
       setEditingRowId(null);
       setEditingRowData(null);
       setOriginalEditingRowData(null);
-      // Define a linha atualizada para efeito visual
       setRecentlyUpdatedRowId(earningId);
       onRefresh();
       toast({
         title: "Atualizado com sucesso!",
         description: "Os ganhos foram atualizados.",
         variant: "success",
-        className: "bg-green-700 text-white", // Fundo opaco para melhor leitura
+        className: "bg-green-700 text-white",
       });
-      // Após 2 segundos, remove o efeito visual
       setTimeout(() => setRecentlyUpdatedRowId(null), 2000);
     } catch (error) {
       console.error("Erro ao editar:", error);
     }
   };
 
-  // Função para deletar com confirmação
   const handleDelete = async (earningId: string) => {
     if (!currentUser) {
       alert("Usuário não autenticado!");
@@ -176,10 +146,8 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
     }
   };
 
-  // Definição das colunas
   const columns = React.useMemo<ColumnDef<Earning>[]>(
     () => [
-       
       {
         accessorKey: "date",
         header: ({ column }) => (
@@ -289,10 +257,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
                   className="w-full rounded border border-gray-300 p-1 text-sm bg-gray-800 text-white"
                   value={editingRowData.platform || ""}
                   onChange={(e) =>
-                    setEditingRowData({
-                      ...editingRowData,
-                      platform: e.target.value,
-                    })
+                    setEditingRowData({ ...editingRowData, platform: e.target.value })
                   }
                 >
                   <option value="">Selecione</option>
@@ -306,10 +271,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
                   className="w-full rounded border border-gray-300 p-1 text-sm bg-gray-800 text-white"
                   value={editingRowData.rideType || ""}
                   onChange={(e) =>
-                    setEditingRowData({
-                      ...editingRowData,
-                      rideType: e.target.value,
-                    })
+                    setEditingRowData({ ...editingRowData, rideType: e.target.value })
                   }
                 >
                   <option value="">Selecione</option>
@@ -326,31 +288,23 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           const rideType = row.original.rideType;
           return (
             <div className="flex flex-col gap-1">
-              {rideType && <Badge variant="outline">{platform} - {rideType}</Badge>}
+              <Badge variant="outline">{platform}{rideType ? ` - ${rideType}` : ""}</Badge>
             </div>
           );
         },
       },
       {
-        accessorKey: "duration",
-        header: () => (
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1">
-              Duração
-            </div>
-          </div>
-        ),
+        id: "desempenho",
+        header: "Desempenho",
         cell: ({ row }) => {
+          const earning = row.original;
           if (editingRowId === row.original.id && editingRowData) {
             return (
               <select
                 className="w-full rounded border border-gray-300 p-1 text-sm bg-gray-800 text-white"
                 value={editingRowData.duration || ""}
                 onChange={(e) =>
-                  setEditingRowData({
-                    ...editingRowData,
-                    duration: e.target.value,
-                  })
+                  setEditingRowData({ ...editingRowData, duration: e.target.value })
                 }
               >
                 <option value="">Selecione</option>
@@ -362,30 +316,11 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
               </select>
             );
           }
-          const duration = row.original.duration || "";
-          const hours = durationToHours[duration] || 0;
-          const amount = row.original.amount;
-          const hourlyRate = hours > 0 ? amount / hours : 0;
           return (
-            <div className="flex flex-col gap-1">
-              {hours > 0 && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                   {duration || "-"} - R$ {hourlyRate.toFixed(2)}/h
-                </Badge>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        id: "desempenho",
-        header: "Desempenho",
-        cell: ({ row }) => {
-          const earning = row.original;
-          return (
-            <PerformanceThermometer
+            <Desempenho 
               amount={earning.amount}
               mileage={earning.mileage}
+              duration={earning.duration}
             />
           );
         },
@@ -398,43 +333,24 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           if (editingRowId === row.original.id) {
             return (
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSaveEdit(earning.id)}
-                  title="Salvar edição"
-                >
+                <Button variant="ghost" onClick={() => handleSaveEdit(earning.id)} title="Salvar edição">
                   <Check className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={handleCancelEdit}
-                  title="Cancelar"
-                >
+                <Button variant="ghost" onClick={handleCancelEdit} title="Cancelar">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             );
           }
           return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Ações</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-gray-800">
-                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleDelete(earning.id)}>
-                  <Trash className="mr-2 h-4 w-4 text-destructive" />
-                  Deletar
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleEdit(earning)}>
-                  Editar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => handleEdit(earning)} title="Editar">
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" onClick={() => handleDelete(earning.id)} title="Deletar">
+                <Trash className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
           );
         },
       },
@@ -445,15 +361,8 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
   const table = useReactTable({
     data,
     columns,
-    initialState: {
-        pagination: { pageSize: 20 } // Exibe 10 registros por página
-      },
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
+    initialState: { pagination: { pageSize: 20 } },
+    state: { sorting, columnFilters, columnVisibility, rowSelection },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -464,6 +373,8 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  // Use o hook useLongPress para detectar toque prolongado e ativar edição (para mobile)
+  // Aqui, aplicamos os eventos na TableRow
   return (
     <div className="w-full">
       {/* Filtro por plataforma */}
@@ -471,51 +382,23 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
         <Input
           placeholder="Filtrar pela plataforma..."
           value={(table.getColumn("platform")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("platform")?.setFilterValue(event.target.value)
-          }
+          onChange={(event) => table.getColumn("platform")?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-gray-800">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
         <div className="flex items-center space-x-2 ml-6">
-            <span className="text-sm">Exibir:</span>
-            <select
-                value={table.getState().pagination.pageSize}
-                onChange={(e) => {
-                table.setPageSize(Number(e.target.value));
-                }}
-                className="border rounded p-1 text-sm"
-            >
-                {[5, 10, 20, 50].map((pageSize) => (
-                <option key={pageSize} value={pageSize}>
-                    {pageSize} registros
-                </option>
-                ))}
-            </select>
-            </div>
-
+          <span className="text-sm">Exibir:</span>
+          <select
+            value={table.getState().pagination.pageSize}
+            onChange={(e) => table.setPageSize(Number(e.target.value))}
+            className="border rounded p-1 text-sm"
+          >
+            {[5, 10, 20, 50].map((pageSize) => (
+              <option key={pageSize} value={pageSize}>
+                {pageSize} registros
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
               
       <div className="rounded-md border">
@@ -525,7 +408,8 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
               <TableRow
                 key={headerGroup.id}
                 className={
-                  recentlyUpdatedRowId && headerGroup.headers.some(h => h.column.id === recentlyUpdatedRowId)
+                  recentlyUpdatedRowId &&
+                  headerGroup.headers.some((h) => h.column.id === recentlyUpdatedRowId)
                     ? "bg-green-500/50 transition-colors duration-1000"
                     : ""
                 }
@@ -542,18 +426,27 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                key={row.id}
-                className="hover:bg-stone-950 active:bg-stone-950 transition-colors"
-              >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const longPressEvents = useLongPress(() => {
+                  if (!editingRowId) handleEdit(row.original);
+                }, 500);
+                return (
+                  <TableRow
+                    key={row.id}
+                    className="hover:bg-stone-950 active:bg-stone-950 transition-colors"
+                    onDoubleClick={() => {
+                      if (!editingRowId) handleEdit(row.original);
+                    }}
+                    {...longPressEvents}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
@@ -565,27 +458,15 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
         </Table>
       </div>
 
-      {/* Paginação */}
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} de{" "}
-          {table.getFilteredRowModel().rows.length} linha(s) selecionadas.
+          {table.getFilteredSelectedRowModel().rows.length} de {table.getFilteredRowModel().rows.length} linha(s) selecionadas.
         </div>
         <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
+          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
             Anterior
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
+          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
             Próximo
           </Button>
         </div>

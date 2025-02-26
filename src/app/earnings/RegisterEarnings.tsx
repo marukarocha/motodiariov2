@@ -1,215 +1,445 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/components/USER/Auth/AuthContext';
-import { addEarning } from '@/lib/db/firebaseServices';
+import React, { useState, useRef } from "react";
+import StepWizard, { ReactStepWizard } from "react-step-wizard";
+import { useAuth } from "@/components/USER/Auth/AuthContext";
+import { addEarning } from "@/lib/db/firebaseServices";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
-import { DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { cn } from '@/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useToast } from "@/hooks/use-toast";
+import { CalendarIcon } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 interface RegisterEarningsProps {
   onClose: () => void;
   onEarningAdded: () => void;
 }
 
-function RegisterEarnings({ onClose, onEarningAdded }: RegisterEarningsProps) {
+const platformOptions = ["Uber", "99", "Ifood", "Indrive", "Particular"];
+const rideTypeOptions = ["Passageiro", "Entrega", "Compras", "Comida"];
+const timeOptions = ["15", "30", "45", "60", "75", "90"]; // tempo em minutos
+
+// Classes para inputs grandes (KM, Valor, Data, Hora)
+const fieldInputClasses =
+  "py-5 px-6 text-[3rem] h-[5rem] border border-gray-300 focus:border-blue-500 focus:outline-none";
+// Classes para os botões de seleção (tamanho moderado)
+const selectButtonClasses =
+  "py-3 px-6 text-2xl h-[4rem] border border-gray-300 focus:border-blue-500";
+// Container para cada etapa com overflow
+const stepContainerClasses = "overflow-auto max-h-[80vh] pb-8";
+
+// Botões de navegação inferiores – aparecem somente na parte inferior
+function StepNavigation({
+  previousStep,
+  nextStep,
+  onSubmit,
+}: {
+  previousStep?: () => void;
+  nextStep?: () => void;
+  onSubmit?: () => void;
+}) {
+  return (
+    <div className="flex justify-center items-center gap-6 mt-6">
+      {previousStep && (
+        <Button
+          variant="ghost"
+          onClick={previousStep}
+          className="w-20 h-20 rounded-full border border-gray-300 flex items-center justify-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-10 w-10"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </Button>
+      )}
+      {nextStep ? (
+        <Button
+          variant="ghost"
+          onClick={nextStep}
+          className="w-20 h-20 rounded-full border border-gray-300 flex items-center justify-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-10 w-10"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Button>
+      ) : onSubmit ? (
+        <Button
+          variant="ghost"
+          onClick={onSubmit}
+          className="w-20 h-20 rounded-full border border-gray-300 flex items-center justify-center bg-green-600 text-white"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-10 w-10"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+// Step 1: Plataforma e Tipo de Corrida
+function Step1({
+  nextStep,
+  setFormValues,
+  formValues,
+}: {
+  nextStep: () => void;
+  setFormValues: (values: any) => void;
+  formValues: any;
+}) {
+  return (
+    <div className={`${stepContainerClasses} space-y-6`}>
+      <div>
+        <Label className="mb-2 text-2xl">Plataforma</Label>
+        <div className="grid grid-cols-2 gap-4">
+          {platformOptions.map((option) => (
+            <Button
+              key={option}
+              variant={formValues.platform === option ? "default" : "outline"}
+              onClick={() => setFormValues({ ...formValues, platform: option })}
+              className={`${selectButtonClasses} ${
+                formValues.platform === option ? "bg-blue-600 text-white border-blue-600" : ""
+              }`}
+            >
+              {option}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <Label className="mb-2 text-2xl">Tipo de Corrida</Label>
+        <div className="grid grid-cols-2 gap-4">
+          {rideTypeOptions.map((option) => (
+            <Button
+              key={option}
+              variant={formValues.rideType === option ? "default" : "outline"}
+              onClick={() => setFormValues({ ...formValues, rideType: option })}
+              className={`${selectButtonClasses} ${
+                formValues.rideType === option ? "bg-blue-600 text-white border-blue-600" : ""
+              }`}
+            >
+              {option}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <StepNavigation nextStep={nextStep} />
+    </div>
+  );
+}
+
+// Step 2: Quilometragem e Tempo da Corrida
+function Step2({
+  nextStep,
+  previousStep,
+  setFormValues,
+  formValues,
+}: {
+  nextStep: () => void;
+  previousStep: () => void;
+  setFormValues: (values: any) => void;
+  formValues: any;
+}) {
+  return (
+    <div className={`${stepContainerClasses} space-y-6`}>
+      <StepNavigation previousStep={previousStep} nextStep={nextStep} />
+      <div>
+        <Label className="mb-2 text-2xl">KM Rodado</Label>
+        <Input
+          type="number"
+          placeholder="Digite a quilometragem"
+          value={formValues.mileage || ""}
+          onChange={(e) => setFormValues({ ...formValues, mileage: e.target.value })}
+          className={fieldInputClasses}
+        />
+      </div>
+      <div>
+        <Label className="mb-2 text-2xl">Tempo da Corrida (minutos)</Label>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {timeOptions.map((option) => (
+              <Button
+                key={option}
+                variant={formValues.timeOption === option ? "default" : "outline"}
+                onClick={() =>
+                  setFormValues({ ...formValues, timeOption: option, time: "" })
+                }
+                className={`${selectButtonClasses} ${
+                  formValues.timeOption === option ? "bg-blue-600 text-white border-blue-600" : ""
+                }`}
+              >
+                {option} min
+              </Button>
+            ))}
+          </div>
+          <Input
+            type="number"
+            placeholder="Ou digite manualmente (máx 3 dígitos)"
+            value={formValues.time || ""}
+            onChange={(e) =>
+              setFormValues({ ...formValues, time: e.target.value, timeOption: "" })
+            }
+            className={fieldInputClasses}
+          />
+        </div>
+      </div>
+      <StepNavigation previousStep={previousStep} nextStep={nextStep} />
+    </div>
+  );
+}
+
+// Step 3: Valor da Corrida
+function Step3({
+  nextStep,
+  previousStep,
+  setFormValues,
+  formValues,
+}: {
+  nextStep: () => void;
+  previousStep: () => void;
+  setFormValues: (values: any) => void;
+  formValues: any;
+}) {
+  return (
+    <div className={`${stepContainerClasses} space-y-6`}>
+      <StepNavigation previousStep={previousStep} nextStep={nextStep} />
+      <div>
+        <Label className="mb-2 text-2xl">Valor (R$)</Label>
+        <Input
+          type="number"
+          placeholder="Digite o valor"
+          value={formValues.amount || ""}
+          onChange={(e) => setFormValues({ ...formValues, amount: e.target.value })}
+          className={fieldInputClasses}
+        />
+      </div>
+      <StepNavigation previousStep={previousStep} nextStep={nextStep} />
+    </div>
+  );
+}
+
+// Step 4: Informações Adicionais
+function Step4({
+  previousStep,
+  setFormValues,
+  formValues,
+  onSubmit,
+}: {
+  previousStep: () => void;
+  setFormValues: (values: any) => void;
+  formValues: any;
+  onSubmit: () => void;
+}) {
+  // Aqui, usamos a variável "useManualDate" do pai para definir se os campos de data/hora serão exibidos.
+  // Vamos adicionar um checkbox que atualize essa variável via setFormValues.
+  return (
+    <div className={`${stepContainerClasses} space-y-6`}>
+      <StepNavigation previousStep={previousStep} />
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <input
+            type="checkbox"
+            className="h-6 w-6"
+            checked={formValues.useManualDate || false}
+            onChange={(e) =>
+              setFormValues({ ...formValues, useManualDate: e.target.checked })
+            }
+          />
+          <Label className="text-2xl">Usar data/hora personalizada?</Label>
+        </div>
+        {formValues.useManualDate && (
+          <>
+            <div>
+              <Label className="mb-2 text-2xl">Data</Label>
+              <Input
+                type="date"
+                placeholder="Selecione a data"
+                value={formValues.date || ""}
+                onChange={(e) =>
+                  setFormValues({ ...formValues, date: e.target.value })
+                }
+                className={fieldInputClasses}
+              />
+            </div>
+            <div>
+              <Label className="mb-2 text-2xl">Hora</Label>
+              <Input
+                type="time"
+                placeholder="Selecione a hora"
+                value={formValues.time || ""}
+                onChange={(e) =>
+                  setFormValues({ ...formValues, time: e.target.value })
+                }
+                className={fieldInputClasses}
+              />
+            </div>
+          </>
+        )}
+        <div className="flex items-center gap-4">
+          <input
+            type="checkbox"
+            className="h-6 w-6"
+            onChange={(e) =>
+              setFormValues({ ...formValues, showTip: e.target.checked })
+            }
+          />
+          <Label className="text-2xl">Recebeu gorjeta?</Label>
+        </div>
+        {formValues.showTip && (
+          <div>
+            <Label className="mb-2 text-2xl">Gorjeta (R$)</Label>
+            <Input
+              type="number"
+              placeholder="Digite o valor da gorjeta"
+              value={formValues.tip || ""}
+              onChange={(e) =>
+                setFormValues({ ...formValues, tip: e.target.value })
+              }
+              className={fieldInputClasses}
+            />
+          </div>
+        )}
+        <div className="flex items-center gap-4">
+          <input
+            type="checkbox"
+            className="h-6 w-6"
+            onChange={(e) =>
+              setFormValues({ ...formValues, showDescription: e.target.checked })
+            }
+          />
+          <Label className="text-2xl">Adicionar anotações?</Label>
+        </div>
+        {formValues.showDescription && (
+          <div>
+            <Label className="mb-2 text-2xl">Anotações</Label>
+            <textarea
+              rows={3}
+              placeholder="Digite suas anotações"
+              value={formValues.description || ""}
+              onChange={(e) =>
+                setFormValues({ ...formValues, description: e.target.value })
+              }
+              className="w-full p-6 text-[3rem] border-0 focus:ring-0"
+            />
+          </div>
+        )}
+      </div>
+      <StepNavigation previousStep={previousStep} onSubmit={onSubmit} />
+    </div>
+  );
+}
+
+export default function RegisterEarnings({ onClose, onEarningAdded }: RegisterEarningsProps) {
   const { currentUser } = useAuth();
-  const [amount, setAmount] = useState('');
-  const [mileage, setMileage] = useState('');
-  const [platform, setPlatform] = useState('');
-  const [tip, setTip] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState<Date>();
-  const [time, setTime] = useState('');
-  const [duration, setDuration] = useState('');
-  const [rideType, setRideType] = useState('');
-  const [useManualDate, setUseManualDate] = useState(false);
-  const [showTipInput, setShowTipInput] = useState(false);
-  const [showDescriptionInput, setShowDescriptionInput] = useState(false);
+  const { toast } = useToast();
+  const wizardRef = useRef<ReactStepWizard>(null);
 
-  const platformOptions = ['Uber', '99', 'Ifood', 'Indrive', 'Particular'];
-  const rideTypeOptions = ['Passageiro', 'Entrega', 'Compras', 'Comida'];
-  const durationOptions = ['15 min', '30 min', '45 min', '1 hora', '1h 30min', '2 horas', '3 horas ou mais'];
+  // Incluímos "useManualDate", "showTip" e "showDescription" no estado do formulário para gerenciar a exibição
+  const [formValues, setFormValues] = useState({
+    platform: "",
+    rideType: "",
+    mileage: "",
+    timeOption: "",
+    time: "",
+    amount: "",
+    tip: "",
+    description: "",
+    duration: "",
+    date: "",
+    useManualDate: false,
+    showTip: false,
+    showDescription: false,
+  });
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!amount || !mileage || !platform || !duration || !rideType) {
-      alert('Preencha todos os campos obrigatórios.');
+  const handleSubmit = async () => {
+    if (
+      !formValues.platform ||
+      !formValues.rideType ||
+      !formValues.mileage ||
+      !formValues.amount ||
+      (!formValues.timeOption && !formValues.time)
+    ) {
+      alert("Preencha todos os campos obrigatórios.");
       return;
     }
 
+    const durationValue =
+      formValues.timeOption !== ""
+        ? parseInt(formValues.timeOption, 10)
+        : formValues.time !== ""
+        ? parseInt(formValues.time, 10)
+        : 0;
+
+    const customDateTime =
+      formValues.useManualDate && formValues.date && formValues.time
+        ? new Date(`${formValues.date}T${formValues.time}:00`)
+        : new Date();
+
     const earning = {
-      date: useManualDate && date ? date : new Date(),
-      time: useManualDate && time ? time : format(new Date(), 'HH:mm'),
-      amount: parseFloat(amount),
-      mileage: parseFloat(mileage),
-      platform,
-      rideType,
-      duration,
-      tip: tip ? parseFloat(tip) : 0,
-      description,
+      date: customDateTime, // Timestamp completo
+      amount: parseFloat(formValues.amount),
+      mileage: parseFloat(formValues.mileage),
+      platform: formValues.platform,
+      rideType: formValues.rideType,
+      duration: durationValue,
+      tip: formValues.tip ? parseFloat(formValues.tip) : 0,
+      description: formValues.description,
     };
 
     try {
       await addEarning(currentUser!.uid, earning);
-      alert('Ganho registrado com sucesso!');
+      toast({
+        title: "Ganho registrado com sucesso!",
+        variant: "success",
+        className: "bg-green-700 text-white",
+      });
       onClose();
       onEarningAdded();
     } catch (error) {
       console.error("Erro ao adicionar ganho:", error);
-      alert('Erro ao registrar ganho. Tente novamente.');
+      alert("Erro ao registrar ganho. Tente novamente.");
     }
   };
 
   return (
-    <DialogContent className="sm:max-w-[425px] bg-[#f8fafc] dark:bg-[#18192A]">
-      <DialogHeader className="relative">
-        <div
-          className="relative inset-0 bg-cover bg-center z-0 "
-          style={{
-            backgroundImage: 'url(/earnings/topo.jpg)',
-            width: '112%',
-            marginLeft: '-24px',
-            height: '200px',
-            marginTop: '-20px',
-          }}
-        />
-        <div className="relative z-10">
-          <DialogTitle>Registrar Ganho</DialogTitle>
-          <DialogDescription>Registre seus ganhos diários aqui.</DialogDescription>
-        </div>
+    <DialogContent className="sm:max-w-[600px] w-full p-6 bg-[#f8fafc] dark:bg-[#18192A]">
+      <DialogHeader className="mb-6">
+        <DialogTitle className="text-2xl">Registrar Ganho</DialogTitle>
+        <DialogDescription className="text-lg">Registre seus ganhos diários.</DialogDescription>
       </DialogHeader>
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <Label>Valor (R$)</Label>
-            <Input type="number" placeholder="Digite o valor" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </div>
-          <div>
-            <Label>KM Rodado</Label>
-            <Input type="number" placeholder="Digite a quilometragem" value={mileage} onChange={(e) => setMileage(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <Label>Duração da Corrida</Label>
-            <Select onValueChange={setDuration} value={duration}>
-              <SelectTrigger><SelectValue placeholder="Selecione a duração" /></SelectTrigger>
-              <SelectContent className='bg-gray-900'>
-                {durationOptions.map((option) => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Plataforma</Label>
-            <Select onValueChange={setPlatform} value={platform}>
-              <SelectTrigger><SelectValue placeholder="Selecione a plataforma" /></SelectTrigger>
-              <SelectContent className='bg-gray-900'>
-                {platformOptions.map((option) => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <Label>Tipo de Corrida</Label>
-          <Select onValueChange={setRideType} value={rideType}>
-            <SelectTrigger><SelectValue placeholder="Selecione o tipo de corrida" /></SelectTrigger>
-            <SelectContent className='bg-gray-900'>
-              {rideTypeOptions.map((option) => (
-                <SelectItem key={option} value={option}>{option}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-
-        <div className="mb-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              className="form-checkbox h-4 w-4"
-              checked={useManualDate}
-              onChange={(e) => setUseManualDate(e.target.checked)}
-            />
-            <span className="text-sm">Definir data e hora manualmente?</span>
-          </label>
-        </div>
-
-        {useManualDate && (
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <Label>Data</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    {date ? format(date, 'PPP', { locale: ptBR }) : 'Escolha uma data'}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={date} onSelect={setDate} locale={ptBR} />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <Label>Hora</Label>
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-            </div>
-          </div>
-        )}
-
-        <div className="mb-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              className="form-checkbox h-4 w-4"
-              checked={showTipInput}
-              onChange={(e) => setShowTipInput(e.target.checked)}
-            />
-            <span className="text-sm">Recebeu gorjeta?</span>
-          </label>
-          {showTipInput && (
-            <Input type="number" placeholder="Digite o valor da gorjeta" value={tip} onChange={(e) => setTip(e.target.value)} className="mt-2" />
-          )}
-        </div>
-
-        <div className="mb-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              className="form-checkbox h-4 w-4"
-              checked={showDescriptionInput}
-              onChange={(e) => setShowDescriptionInput(e.target.checked)}
-            />
-            <span className="text-sm">Adicionar anotações?</span>
-          </label>
-          {showDescriptionInput && (
-            <textarea rows={3} placeholder="Digite sua anotação" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-2 border rounded-md mt-2" />
-          )}
-        </div>
-          
-          </div>
-        <DialogFooter>
-          <Button type="submit" className="w-full bg-green-600">Registrar</Button>
-        </DialogFooter>
-      </form>
+      <StepWizard instance={(instance) => (wizardRef.current = instance)} transitions={false}>
+        <Step1 setFormValues={setFormValues} formValues={formValues} nextStep={() => wizardRef.current?.nextStep()} />
+        <Step2 setFormValues={setFormValues} formValues={formValues} previousStep={() => wizardRef.current?.previousStep()} nextStep={() => wizardRef.current?.nextStep()} />
+        <Step3 setFormValues={setFormValues} formValues={formValues} previousStep={() => wizardRef.current?.previousStep()} nextStep={() => wizardRef.current?.nextStep()} />
+        <Step4 setFormValues={setFormValues} formValues={formValues} previousStep={() => wizardRef.current?.previousStep()} onSubmit={handleSubmit} />
+      </StepWizard>
     </DialogContent>
   );
 }
-
-export default RegisterEarnings;

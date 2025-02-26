@@ -309,10 +309,10 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
   useEffect(() => {
     if (!isInputFocused && isStepComplete(currentStep) && currentStep < totalSteps) {
       const timer = setTimeout(() => {
-        if (Date.now() - lastChange >= 1000) {
+        if (Date.now() - lastChange >= 1500) {
           setCurrentStep(currentStep + 1);
         }
-      }, 1000);
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [formValues, currentStep, isInputFocused, lastChange, totalSteps]);
@@ -415,11 +415,13 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
   };
 
   return (
-    <DialogContent className="sm:max-w-[600px] w-full p-6 bg-[#18192A] text-white">
+    <DialogContent className=" w-full p-6 bg-[#18192A] text-white">
       <DialogHeader className="mb-6 text-center">
         <DialogTitle className="text-2xl">Registrar Ganho</DialogTitle>
         <DialogDescription className="text-lg">Registre seus ganhos diários.</DialogDescription>
-        <div className="overflow-x-auto">
+       
+      </DialogHeader>
+      <div className="overflow-x-auto flex justify-center">
         <Stepper
             steps={steps}
             currentStep={currentStep}
@@ -427,8 +429,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
             className="my-custom-stepper-class" // se quiser classes extras
           />
         </div>
-      </DialogHeader>
-
       {/* Conteúdo dos Steps com transição */}
       <div style={{ position: "relative", minHeight: "250px" }}>
         <AnimatePresence mode="wait">

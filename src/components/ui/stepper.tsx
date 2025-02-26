@@ -66,7 +66,7 @@ const Stepper: React.FC<StepperProps> = ({
                 {index < steps.length - 1 && (
                   <div
                     className={cn(
-                      "h-[2px] mb-5 mx-2 w-10",
+                      "h-[2px] mb-0 mx-2 w-5",
                       isComplete ? "bg-white" : "bg-slate-400"
                     )}
                   />

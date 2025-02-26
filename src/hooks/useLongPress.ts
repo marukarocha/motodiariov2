@@ -28,15 +28,13 @@ export function useLongPress(callback: () => void, ms: number = 500) {
 
 export function useOutsideClick(ref: React.RefObject<HTMLElement>, callback: () => void) {
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
+    function handleClick(event: MouseEvent | TouchEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         callback();
       }
-    };
-
+    }
     document.addEventListener("mousedown", handleClick);
     document.addEventListener("touchstart", handleClick);
-
     return () => {
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("touchstart", handleClick);

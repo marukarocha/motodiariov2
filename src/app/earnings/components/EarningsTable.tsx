@@ -23,7 +23,6 @@ import {
   Check,
   Pencil,
   X,
-  MoreHorizontal,
 } from "lucide-react";
 import {
   Table,
@@ -37,7 +36,7 @@ import Desempenho from "@/app/earnings/components/desempenho";
 import { deleteEarning, updateEarning } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useLongPress } from "@/hooks/useLongPress";
+import { useLongPress, useOutsideClick } from "@/hooks/useLongPress";
 
 export type Earning = {
   id: string;
@@ -58,24 +57,36 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
+  // Estados do Tanstack React Table
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
+  // Estados de edição
   const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
   const [editingRowData, setEditingRowData] = React.useState<Partial<Earning> | null>(null);
   const [originalEditingRowData, setOriginalEditingRowData] = React.useState<Partial<Earning> | null>(null);
+
+  // Para dar feedback visual
   const [recentlyUpdatedRowId, setRecentlyUpdatedRowId] = React.useState<string | null>(null);
 
+  // Opções pré-definidas
   const platformOptions = ["Uber", "99", "Ifood", "Indrive", "Particular"];
   const rideTypeOptions = ["Passageiro", "Entrega", "Compras", "Comida"];
   const durationOptions = ["15 min", "30 min", "45 min", "1 hora", "1h 30min", "2 horas", "3 horas ou mais"];
 
-  // Hook para detectar long press (já importado via useLongPress)
-  // Permite entrar em modo de edição com toque prolongado
-  // onDoubleClick também ativa a edição
+  // 1) Crie um ref para a linha em edição
+  const editRowRef = useRef<HTMLTableRowElement | null>(null);
 
+  // 2) Use o hook useOutsideClick para fechar edição se clicar fora da row
+  useOutsideClick(editRowRef, () => {
+    if (editingRowId) {
+      handleCancelEdit();
+    }
+  });
+
+  // ---- Lógica de edição ----
   const handleEdit = (earning: Earning) => {
     setEditingRowId(earning.id);
     const dateISO =
@@ -101,6 +112,8 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
       return;
     }
     let updatedData: Partial<Earning> = { ...editingRowData };
+
+    // Se data não mudou, removemos do update
     if (
       editingRowData?.date &&
       originalEditingRowData &&
@@ -146,6 +159,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
     }
   };
 
+  // ---- Definição das colunas ----
   const columns = React.useMemo<ColumnDef<Earning>[]>(
     () => [
       {
@@ -288,7 +302,10 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           const rideType = row.original.rideType;
           return (
             <div className="flex flex-col gap-1">
-              <Badge variant="outline">{platform}{rideType ? ` - ${rideType}` : ""}</Badge>
+              <Badge variant="outline">
+                {platform}
+                {rideType ? ` - ${rideType}` : ""}
+              </Badge>
             </div>
           );
         },
@@ -317,7 +334,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
             );
           }
           return (
-            <Desempenho 
+            <Desempenho
               amount={earning.amount}
               mileage={earning.mileage}
               duration={earning.duration}
@@ -333,7 +350,11 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           if (editingRowId === row.original.id) {
             return (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={() => handleSaveEdit(earning.id)} title="Salvar edição">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSaveEdit(earning.id)}
+                  title="Salvar edição"
+                >
                   <Check className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" onClick={handleCancelEdit} title="Cancelar">
@@ -355,14 +376,28 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
         },
       },
     ],
-    [editingRowId, editingRowData, currentUser, onRefresh, originalEditingRowData]
+    [
+      editingRowId,
+      editingRowData,
+      currentUser,
+      onRefresh,
+      originalEditingRowData,
+      platformOptions,
+      rideTypeOptions,
+      durationOptions,
+    ]
   );
 
   const table = useReactTable({
     data,
     columns,
     initialState: { pagination: { pageSize: 20 } },
-    state: { sorting, columnFilters, columnVisibility, rowSelection },
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -373,8 +408,8 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  // Use o hook useLongPress para detectar toque prolongado e ativar edição (para mobile)
-  // Aqui, aplicamos os eventos na TableRow
+  // Hook para detectar toque prolongado e ativar edição (para mobile)
+  // Aplica-se nos <TableRow> que não estejam em edição
   return (
     <div className="w-full">
       {/* Filtro por plataforma */}
@@ -400,7 +435,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           </select>
         </div>
       </div>
-              
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -424,20 +459,26 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
               </TableRow>
             ))}
           </TableHeader>
+
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => {
+                const isEditingThisRow = editingRowId === row.original.id;
                 const longPressEvents = useLongPress(() => {
+                  // Só entra em edição se não estiver editando outra row
                   if (!editingRowId) handleEdit(row.original);
                 }, 500);
+
                 return (
                   <TableRow
                     key={row.id}
+                    // Se for a row em edição, atribui o ref
+                    ref={isEditingThisRow ? editRowRef : null}
                     className="hover:bg-stone-950 active:bg-stone-950 transition-colors"
                     onDoubleClick={() => {
                       if (!editingRowId) handleEdit(row.original);
                     }}
-                    {...longPressEvents}
+                    {...(!isEditingThisRow ? longPressEvents : {})}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -458,15 +499,27 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
         </Table>
       </div>
 
+      {/* Paginação */}
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} de {table.getFilteredRowModel().rows.length} linha(s) selecionadas.
+          {table.getFilteredSelectedRowModel().rows.length} de{" "}
+          {table.getFilteredRowModel().rows.length} linha(s) selecionadas.
         </div>
         <div className="space-x-2">
-          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
             Anterior
           </Button>
-          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
             Próximo
           </Button>
         </div>

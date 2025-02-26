@@ -58,8 +58,7 @@ export function EarningsSummary({ earningsData }: EarningsSummaryProps) {
         <CardContent>
           <div className="text-2xl font-bold">R$ {totalEarnings.toFixed(2)}</div>
           <div className="flex gap-2 mt-2">
-            <Badge variant="secondary">Badge 1</Badge>
-            <Badge variant="secondary">Badge 2</Badge>
+           
           </div>
           <div className="mt-4">
             <Link href="/earnings/details" className="text-sm font-medium text-primary hover:underline">
@@ -77,8 +76,7 @@ export function EarningsSummary({ earningsData }: EarningsSummaryProps) {
         <CardContent>
           <div className="text-2xl font-bold">R$ {averageEarningsPerHour.toFixed(2)}</div>
           <div className="flex gap-2 mt-2">
-            <Badge variant="secondary">Badge 1</Badge>
-            <Badge variant="secondary">Badge 2</Badge>
+           
           </div>
           <div className="mt-4">
             <Link href="/earnings/hourly" className="text-sm font-medium text-primary hover:underline">
@@ -96,8 +94,7 @@ export function EarningsSummary({ earningsData }: EarningsSummaryProps) {
         <CardContent>
           <div className="text-2xl font-bold">R$ {averageEarningsPerDay.toFixed(2)}</div>
           <div className="flex gap-2 mt-2">
-            <Badge variant="secondary">Badge 1</Badge>
-            <Badge variant="secondary">Badge 2</Badge>
+       
           </div>
           <div className="mt-4">
             <Link href="/earnings/daily" className="text-sm font-medium text-primary hover:underline">

@@ -16,18 +16,19 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { NumericFormat } from "react-number-format";
+import { User, MapPin, DollarSign, ClipboardList } from "lucide-react";
 
 // Arrays de opções
 const platformOptions = ["Uber", "99", "Ifood", "Indrive", "Particular"];
 const rideTypeOptions = ["Passageiro", "Entrega", "Compras", "Comida"];
 const timeOptions = ["15", "30", "45", "60", "75", "90"];
+// Steps com ícones
 const steps = [
-  { number: 1, label: "Plataforma e Tipo", icon: "user" },
-  { number: 2, label: "KM e Tempo", icon: "mappin" },
-  { number: 3, label: "Valor", icon: "dollar" },
-  { number: 4, label: "Extras", icon: "clipboard" },
+  { number: 1, label: "Plataforma e Tipo", icon: User },
+  { number: 2, label: "KM e Tempo", icon: MapPin },
+  { number: 3, label: "Valor", icon: DollarSign },
+  { number: 4, label: "Extras", icon: ClipboardList },
 ];
-
 // Classes de estilo
 const fieldInputClasses =
   "py-5 px-6 text-[1.2rem] h-[3rem] border border-gray-300 focus:border-blue-500 focus:outline-none";
@@ -418,7 +419,7 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
       <DialogHeader className="mb-6 text-center">
         <DialogTitle className="text-2xl">Registrar Ganho</DialogTitle>
         <DialogDescription className="text-lg">Registre seus ganhos diários.</DialogDescription>
-        <div className="flex justify-center">
+        <div className="overflow-x-auto">
         <Stepper
             steps={steps}
             currentStep={currentStep}
@@ -444,21 +445,30 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
         </AnimatePresence>
       </div>
 
-      {/* Rodapé fixo de navegação */}
-      <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-600">
-        <Button onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))} disabled={currentStep === 1}>
-          Voltar
-        </Button>
-        <div className="text-sm">Passo {currentStep} de {totalSteps}</div>
+     {/* Rodapé fixo */}
+     <div className="flex items-center justify-start mt-6 pt-6 border-t border-gray-600 gap-4">
+        {/* 'Passo X de Y - Nome do Step' no centro, ou outro local */}
+        
+
+        {/* Botões lado a lado à direita */}
+        {currentStep > 1 && (
+          <Button className=" border border-input bg-background shadow-sm text-white" onClick={() => setCurrentStep(currentStep - 1)}>
+            Voltar
+          </Button>
+        )}
         {currentStep < totalSteps ? (
-          <Button onClick={() => setCurrentStep((prev) => Math.min(totalSteps, prev + 1))}>
+          <Button className=" border border-input bg-background shadow-sm text-white" onClick={() => setCurrentStep(currentStep + 1)}>
             Próximo
           </Button>
         ) : (
-          <Button onClick={handleSubmit} className="bg-green-600 text-white">
+          <Button  onClick={handleSubmit} className="bg-green-600 text-white">
             Enviar
           </Button>
+          
         )}
+        <div className="text-sm text-end mr-auto">
+          {currentStep} de {totalSteps} - {steps[currentStep - 1].label}
+        </div>
       </div>
     </DialogContent>
   );

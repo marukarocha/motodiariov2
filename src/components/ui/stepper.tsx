@@ -3,29 +3,13 @@ import React, { useRef } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Check } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-// Importe os ícones que deseja usar
-import {
-  User,
-  MapPin,
-  DollarSign,
-  ClipboardList,
-} from "lucide-react";
+import { motion } from "framer-motion";
 
 interface Step {
   number: number;
-  label: string;
-  icon: keyof typeof icons; // Chave do objeto icons
+  label: string;          // Mantemos label se quiser usar em outro lugar
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; // O ícone importado
 }
-
-// Mapeamos as chaves para os componentes de ícone
-const icons = {
-  user: User,
-  mappin: MapPin,
-  dollar: DollarSign,
-  clipboard: ClipboardList,
-  // Adicione quantos quiser
-};
 
 interface StepperProps {
   steps: Step[];
@@ -43,24 +27,22 @@ const Stepper: React.FC<StepperProps> = ({
   const scrollAreaRef = useRef<HTMLDivElement | null>(null);
 
   return (
-    <ScrollArea
-      className={cn(
-        "w-full whitespace-nowrap rounded-md flex justify-center",
-        className
-      )}
-    >
-      <div className="flex items-center p-4 gap-6" ref={scrollAreaRef}>
+    <ScrollArea className={cn("w-full overflow-x-auto", className)}>
+      <div className="flex items-center p-4 gap-2" ref={scrollAreaRef}>
         {steps.map((step, index) => {
           const isActive = step.number === currentStep;
           const isComplete = step.number < currentStep;
-
-          // Obtemos o ícone a partir da chave step.icon
-          const IconComponent = icons[step.icon];
+          const IconComp = step.icon; // Ícone do step
 
           return (
-            <div key={step.number} className="flex flex-col items-center">
+            <div key={step.number} className="flex flex-col items-center shrink-0">
               <div className="flex items-center">
-                <div className="flex flex-col items-center justify-center">
+                <motion.div
+                  // Usamos Motion para aplicar scale no step ativo
+                  animate={isActive ? { scale: 1.5 } : { scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex flex-col items-center justify-center"
+                >
                   <div
                     onClick={() => onStepClick(step.number)}
                     className={cn(
@@ -73,22 +55,14 @@ const Stepper: React.FC<StepperProps> = ({
                     )}
                   >
                     {isComplete ? (
-                      <Check className="w-6 h-6" />
+                      <Check className="w-5 h-5" />
                     ) : (
-                      // Renderiza o ícone do step
-                      IconComponent ? <IconComponent className="w-5 h-5" /> : step.number
+                      <IconComp className="w-5 h-5" />
                     )}
                   </div>
+                </motion.div>
 
-                  {/* Exibe o label como Badge outline */}
-                  <div className="mt-2 w-10  flex justify-center">
-                    <Badge variant="outline" className="text-center">
-                      {step.label}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Linha horizontal entre steps */}
+                {/* Linha entre os steps */}
                 {index < steps.length - 1 && (
                   <div
                     className={cn(

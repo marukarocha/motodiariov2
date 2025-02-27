@@ -1,0 +1,43 @@
+/* styles/custom-daypicker.css */
+.rdp-root {
+    background-color: #1c1b22 !important;
+    color: #fff !important;
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+  }
+  
+  .rdp-caption {
+    color: #d22626 !important;
+    font-weight: bold !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .rdp-range_middle {
+	background-color:       #121217    ;
+}
+  .rdp-head_cell {
+    color: #b42525 !important;
+  }
+  .rdp-chevron {
+	display: inline-block;
+	fill: #f3f3f7;
+}
+.rdp-range_start .rdp-day_button, .rdp-range_end .rdp-day_button {
+	background-color: #15803D;
+	border: none;
+}
+  .rdp-day {
+    color: #fff !important;
+  }
+  
+  .rdp-day_selected,
+  .rdp-day_range_start,
+  .rdp-day_range_end,
+  .rdp-day_range_middle {
+    background-color: #4d8a18 !important;
+    color: #181313 !important;
+  }
+  
+  .rdp-day_outside {
+    color: #1053ab !important;
+  }
+  

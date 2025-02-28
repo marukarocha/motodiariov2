@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GiFlatTire, GiPokecog } from "react-icons/gi";
-import { FaOilCan,  FaCogs, FaTools } from "react-icons/fa";
+import { FaOilCan, FaCogs, FaTools } from "react-icons/fa";
 import RegisterManutencaoForm from "./RegisterManutencaoForm";
 
 interface MaintenanceOption {
@@ -25,13 +25,17 @@ const maintenanceOptions: MaintenanceOption[] = [
   { label: "Troca de Pneus", icon: <GiFlatTire size={48} />, type: "troca de pneus" },
   { label: "Troca de Relação", icon: <GiPokecog size={48} />, type: "troca de relação" },
   { label: "Manutenção do Motor", icon: <FaTools size={48} />, type: "manutenção do motor" },
+  { label: "Pastilha de Freio", icon: <FaCogs size={48} />, type: "pastilha de freio" },
+  { label: "Troca de Filtro de Ar", icon: <GiPokecog size={48} />, type: "troca de filtro de ar" },
+  { label: "Revisão de Suspensão", icon: <FaTools size={48} />, type: "revisão de suspensão" },
+  { label: "Verificação de Freios", icon: <GiFlatTire size={48} />, type: "verificação de freios" },
 ];
 
 export default function MaintenanceDashboard() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
       {maintenanceOptions.map((option) => (
         <Dialog
           key={option.type}
@@ -42,13 +46,13 @@ export default function MaintenanceDashboard() {
             <Button
               variant="outline"
               className="
-                flex flex-col items-center justify-center 
-                p-6 h-40 w-full
+                flex flex-row md:flex-col items-center justify-center 
+                p-4 h-16 md:h-40 w-full
                 hover:scale-105 transition-transform
               "
             >
               {option.icon}
-              <span className="mt-2 text-center font-semibold">
+              <span className="ml-2 md:mt-2 text-center font-semibold">
                 {option.label}
               </span>
             </Button>

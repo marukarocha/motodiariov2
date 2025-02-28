@@ -30,7 +30,7 @@ export const BikeCard: React.FC<BikeCardProps> = ({ bikeData, isLoading }) => {
   }
 
   return (
-    <Card className="mb-4">
+    <Card className="mb-4 p-4">
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="text-center md:text-left">

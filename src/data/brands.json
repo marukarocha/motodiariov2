@@ -1,0 +1,44 @@
+{
+    "Honda": [
+      { "model": "CG 160", "cc": 160 },
+      { "model": "CG 160 Cargo", "cc": 160 },
+      { "model": "CG 160 Start", "cc": 160 },
+      { "model": "CG 125", "cc": 125 },
+      { "model": "Biz 110", "cc": 110 },
+      { "model": "Biz 125", "cc": 125 },
+      { "model": "NXR 160 Bros", "cc": 160 },
+      { "model": "XRE 190", "cc": 190 }
+    ],
+    "Yamaha": [
+      { "model": "Factor 125", "cc": 125 },
+      { "model": "Fazer 150", "cc": 150 },
+      { "model": "Fazer 250", "cc": 250 },
+      { "model": "NMax 160", "cc": 160 },
+      { "model": "XTZ Crosser", "cc": 150 },
+      { "model": "Lander 250", "cc": 250 }
+    ],
+    "Suzuki": [
+      { "model": "Access 125", "cc": 125 },
+      { "model": "Burgman 125", "cc": 125 }
+    ],
+    "Haojue": [
+      { "model": "DK 150", "cc": 150 },
+      { "model": "Lindy 125", "cc": 125 }
+    ],
+    "Shineray": [
+      { "model": "Worker 125", "cc": 125 },
+      { "model": "JEF 150", "cc": 150 },
+      { "model": "Jet 125", "cc": 125 },
+      { "model": "SHI 175", "cc": 175 }
+    ],
+    "Dafra": [
+      { "model": "Horizon 150", "cc": 150 },
+      { "model": "Apache RTR 200", "cc": 200 },
+      { "model": "NH 190", "cc": 190 }
+    ],
+    "Electric": [
+      { "model": "Super Soco TC", "cc": 0 },
+      { "model": "Voltz EV1 Sport", "cc": 0 }
+    ]
+  }
+  

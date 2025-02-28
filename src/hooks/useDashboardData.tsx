@@ -1,25 +1,24 @@
-// useDashboardData.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { getEarnings, getUserConfig } from '@/lib/db/firebaseServices';
 
 interface Earning {
-    id: string;
-    amount: number;
-    mileage: number;
-    platform: string;
-    tip?: number;
-    description?: string;
-    date: any;
-    hours?: number;
+  id: string;
+  amount: number;
+  mileage: number;
+  platform: string;
+  tip?: number;
+  description?: string;
+  date: any;
+  hours?: number;
 }
 
 interface User {
-    uid: string;
-    email: string | null;
-    name: string | null;
-    role: string;
+  uid: string;
+  email: string | null;
+  name: string | null;
+  role: string;
 }
 
 interface DashboardData {
@@ -56,12 +55,19 @@ export const useDashboardData = (): DashboardData => {
               },
             }));
           } else {
+            // Não setar erro para usuário novo sem dados registrados
             console.log("fetchUserData: User config not found for UID:", uid);
-            setDashboardData(prev => ({ ...prev, error: 'Dados do usuário não encontrados.' }));
+            setDashboardData(prev => ({
+              ...prev,
+              userData: null,
+            }));
           }
         } catch (error: any) {
           console.error("fetchUserData: Error:", error);
-          setDashboardData(prev => ({ ...prev, error: `Erro ao carregar dados do usuário: ${error.message}` }));
+          setDashboardData(prev => ({
+            ...prev,
+            error: `Erro ao carregar dados do usuário: ${error.message}`,
+          }));
         }
       } else {
         console.log("fetchUserData: UID not found in localStorage.");
@@ -73,9 +79,15 @@ export const useDashboardData = (): DashboardData => {
         try {
           console.log("fetchEarningsData: fetching earnings for UID:", uid);
           const userEarnings = await getEarnings(uid);
-          setDashboardData(prev => ({ ...prev, earnings: userEarnings as Earning[] }));
+          setDashboardData(prev => ({
+            ...prev,
+            earnings: userEarnings as Earning[],
+          }));
         } catch (error: any) {
-          setDashboardData(prev => ({ ...prev, error: `Erro ao carregar ganhos: ${error.message}` }));
+          setDashboardData(prev => ({
+            ...prev,
+            error: `Erro ao carregar ganhos: ${error.message}`,
+          }));
         }
       }
     };

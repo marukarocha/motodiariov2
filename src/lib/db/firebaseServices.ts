@@ -318,6 +318,54 @@ async function getAppConfig(userId: string): Promise<Record<string, unknown> | n
 }
 
 /* =======================
+   FUNÇÃO Dados Usuaario
+   ======================= */
+
+   export async function updateUserData(userId: string, data: Partial<{ name: string; bikeModel: string }>) {
+    if (!userId) throw new Error("ID do usuário é necessário");
+  
+    const userRef = doc(db, "users", userId);
+  
+    try {
+      await updateDoc(userRef, data);
+    } catch (error) {
+      console.error("Erro ao atualizar usuário:", error);
+      throw error;
+    }
+  }
+
+  
+// Função para buscar os dados do perfil do usuário
+export async function getUserProfile(userId: string): Promise<Record<string, unknown> | null> {
+  try {
+    const userRef = doc(db, "users", userId);
+    const profileRef = doc(userRef, "configurations", "user");
+    const docSnap = await getDoc(profileRef);
+    if (docSnap.exists()) {
+      return docSnap.data();
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Erro ao buscar perfil:", error);
+    throw error;
+  }
+}
+
+// Função para atualizar (ou criar) os dados do perfil do usuário
+export async function updateUserProfile(userId: string, data: Record<string, unknown>): Promise<void> {
+  try {
+    const userRef = doc(db, "users", userId);
+    const profileRef = doc(userRef, "configurations", "user");
+    await setDoc(profileRef, data, { merge: true });
+  } catch (error) {
+    console.error("Erro ao atualizar perfil:", error);
+    throw error;
+  }
+}
+
+
+/* =======================
    FUNÇÃO PARA LOGOUT
    ======================= */
 

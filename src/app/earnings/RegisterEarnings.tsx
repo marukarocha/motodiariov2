@@ -407,7 +407,7 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
   };
 
   return (
-    <DialogContent className="sm:max-w-[600px] w-full p-6 bg-[#18192A] text-white">
+    <DialogContent className="sm:max-w-[600px] w-full p-6 bg-[#1C1B22] text-white">
       <DialogHeader className="mb-6 text-center">
         <DialogTitle className="text-2xl">Registrar Ganho</DialogTitle>
         <DialogDescription className="text-lg">

@@ -32,46 +32,25 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
-        {/* Logo e título */}
+        {/* Logo e navegação */}
         <div className="flex items-center space-x-4">
           <a className="flex items-center space-x-2" href="/">
             <span className="font-bold sm:inline-block">Moto Diário</span>
           </a>
-          {/* Navegação Desktop */}
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-            <a
-              onClick={handleNavItemClick}
-              className="transition-colors hover:text-foreground/80 text-foreground"
-              href="/earnings"
-            >
+            <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-foreground" href="/earnings">
               Ganhos
             </a>
-            <a
-              onClick={handleNavItemClick}
-              className="transition-colors hover:text-foreground/80 text-muted-foreground"
-              href="/dashboard/customers"
-            >
+            <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/dashboard/customers">
               Corridas
             </a>
-            <a
-              onClick={handleNavItemClick}
-              className="transition-colors hover:text-foreground/80 text-muted-foreground"
-              href="/fuelings"
-            >
+            <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/fuelings">
               Abastecimentos
             </a>
-            <a
-              onClick={handleNavItemClick}
-              className="transition-colors hover:text-foreground/80 text-muted-foreground"
-              href="/bike"
-            >
+            <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/bike">
               Moto
             </a>
-            <a
-              onClick={handleNavItemClick}
-              className="transition-colors hover:text-foreground/80 text-muted-foreground"
-              href="/maintenance"
-            >
+            <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/maintenance">
               Manutenções
             </a>
           </nav>
@@ -79,7 +58,14 @@ export function Header() {
 
         {/* Ações e menu mobile */}
         <div className="flex items-center space-x-2">
-          {/* Botão do menu mobile */}
+          {/* Ícone do perfil */}
+          <div className="hidden md:block">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/profile")}>
+              <User className="h-4 w-4" />
+              <span className="sr-only">Perfil</span>
+            </Button>
+          </div>
+          {/* Menu mobile */}
           <div className="md:hidden">
             <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
               {mobileMenuOpen ? (
@@ -107,40 +93,23 @@ export function Header() {
       {mobileMenuOpen && (
         <nav className="md:hidden bg-background border-t">
           <div className="container flex flex-col py-2 space-y-1">
-            <a
-              onClick={handleNavItemClick}
-              className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
-              href="/earnings"
-            >
+            <a onClick={handleNavItemClick} className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700" href="/earnings">
               Ganhos
             </a>
-            <a
-              onClick={handleNavItemClick}
-              className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
-              href="/dashboard/customers"
-            >
+            <a onClick={handleNavItemClick} className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700" href="/dashboard/customers">
               Corridas
             </a>
-            <a
-              onClick={handleNavItemClick}
-              className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
-              href="/fuelings"
-            >
+            <a onClick={handleNavItemClick} className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700" href="/fuelings">
               Abastecimentos
             </a>
-            <a
-              onClick={handleNavItemClick}
-              className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
-              href="/bike"
-            >
+            <a onClick={handleNavItemClick} className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700" href="/bike">
               Moto
             </a>
-            <a
-              onClick={handleNavItemClick}
-              className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
-              href="/maintenance"
-            >
+            <a onClick={handleNavItemClick} className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700" href="/maintenance">
               Manutenções
+            </a>
+            <a onClick={handleNavItemClick} className="px-4 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700" href="/profile">
+              Perfil
             </a>
           </div>
         </nav>

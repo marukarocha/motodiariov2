@@ -4,7 +4,15 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Form, FormField, FormControl, FormLabel, FormMessage, FormItem, FormDescription } from '@/components/ui/form';
+import {
+  Form,
+  FormField,
+  FormControl,
+  FormLabel,
+  FormMessage,
+  FormItem,
+  FormDescription,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,16 +20,12 @@ import { useAuth } from '@/components/USER/Auth/AuthContext';
 import { registerBike, getBikeData } from '@/lib/db/firebaseServices';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert } from "@/components/ui/alert";
-import { faMotorcycle, faCarSide, faTachometerAlt, faCalendarAlt, faPalette, faPlus, faOilCan, faWrench, faGasPump, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
-
+import { Card, CardContent } from '@/components/ui/card';
+import { faCarSide, faWrench, faGasPump, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BikeCard } from '@/app/bike/components/BikeCard';
-
+import brandsData from '@/data/brands.json';
 
 interface BikeData {
   make: string;
@@ -33,97 +37,172 @@ interface BikeData {
   oilChangeInterval: number;
   relationChangeKm: number;
   oilChangeKm: number;
-  lubricationKm: string;
+  lubricationKm: number;
   lastMaintenance: string;
   tankVolume: number;
   averageConsumption: number | null;
 }
 
-const models = ['Modelo 1', 'Modelo 2', 'Modelo 3'];
-const colors = ['Preto', 'Branco', 'Vermelho', 'Azul'];
-const years = Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i);
+const defaultValues: BikeData = {
+  make: '',
+  model: '',
+  year: new Date().getFullYear(),
+  plate: '',
+  color: '',
+  initialMileage: 0,
+  oilChangeInterval: 0,
+  relationChangeKm: 0,
+  oilChangeKm: 0,
+  lubricationKm: 0,
+  lastMaintenance: '',
+  tankVolume: 0,
+  averageConsumption: null,
+};
+
+const years = Array.from({ length: new Date().getFullYear() - 2015 + 1 }, (_, i) => 2015 + i);
+
+function toNumber(val: unknown) {
+  if (typeof val === 'string') {
+    const numeric = val.replace(/[^\d]/g, '');
+    return numeric ? Number(numeric) : 0;
+  }
+  return val;
+}
 
 const bikeSchema = z.object({
   make: z.string().min(1, { message: 'A marca é obrigatória' }),
   model: z.string().min(1, { message: 'O modelo é obrigatório' }),
-  year: z.number().min(1900, { message: 'Ano inválido' }).max(new Date().getFullYear(), { message: 'Ano inválido' }),
-  plate: z.string().min(7, { message: 'Placa inválida' }),
+  year: z.preprocess(
+    toNumber,
+    z.number()
+      .min(2015, { message: 'Selecione um ano entre 2015 e o atual' })
+      .max(new Date().getFullYear(), { message: 'Ano inválido' })
+  ),
+  plate: z.string().regex(/^\d{4}-\d{3}$/, { message: 'Placa inválida. Formato esperado: 1234-567' }),
   color: z.string().min(1, { message: 'A cor é obrigatória' }),
-  initialMileage: z.number().min(0, { message: 'Quilometragem inválida' }),
-  oilChangeInterval: z.number().min(0, { message: 'Intervalo inválido' }),
-  relationChangeKm: z.number().min(0, { message: 'Quilometragem inválida' }),
-  oilChangeKm: z.number().min(0, { message: 'Quilometragem inválida' }),
-  lubricationKm: z.number().min(0, { message: 'Quilometragem inválida' }),
+  initialMileage: z.preprocess(toNumber, z.number().min(0, { message: 'Quilometragem inválida' })),
+  oilChangeInterval: z.preprocess(toNumber, z.number().min(0, { message: 'Intervalo inválido' })),
+  relationChangeKm: z.preprocess(toNumber, z.number().min(0, { message: 'Quilometragem inválida' })),
+  oilChangeKm: z.preprocess(toNumber, z.number().min(0, { message: 'Quilometragem inválida' })),
+  lubricationKm: z.preprocess(toNumber, z.number().min(0, { message: 'Quilometragem inválida' })),
   lastMaintenance: z.string().optional(),
-  tankVolume: z.number().min(0, { message: 'Volume inválido' }),
-  averageConsumption: z.number().min(0).nullable().optional(),
+  tankVolume: z.preprocess(toNumber, z.number().min(0, { message: 'Volume inválido' })),
+  averageConsumption: z.preprocess(toNumber, z.number().min(0).nullable().optional()),
 });
+
+function formatMileage(value: number): string {
+  if (value < 1000) {
+    const padded = String(value).padStart(3, '0');
+    return `0.${padded} km`;
+  } else {
+    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value) + ' km';
+  }
+}
 
 export default function RegisterBikePage() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+
   const [bikeData, setBikeData] = useState<BikeData | null>(null);
-  const [formError, setFormError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"info" | "maintenance" | "fuel">('info'); // Define activeTab type
-  const form = useForm<BikeData>({
+  const [activeTab, setActiveTab] = useState<"info" | "maintenance" | "fuel">('info');
+
+  // Estado para a marca selecionada e lista de modelos
+  const [selectedBrand, setSelectedBrand] = useState<string>('');
+  const [availableModels, setAvailableModels] = useState<{ model: string; cc: number }[]>([]);
+
+  // Inicializa o formulário com RHF
+  const formMethods = useForm<BikeData>({
     resolver: zodResolver(bikeSchema),
-    defaultValues: bikeData || {},
+    defaultValues: defaultValues,
     mode: 'onSubmit',
   });
-  const { control, handleSubmit, reset, setValue, formState: { errors }, } = form;
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = formMethods;
 
+  const mileageValue = watch('initialMileage');
 
+  // Carrega os dados do DB e normaliza os valores
   useEffect(() => {
-    const fetchBikeData = async () => {
-        try {
-          const data = await getBikeData(currentUser?.uid || '');
-          if (data) {
-            setBikeData(data);
-            reset(data);
-          } else {
-            setBikeData(null); // Explicitly set bikeData to null if no data is returned
+    async function fetchData() {
+      if (!currentUser) return;
+      setIsLoading(true);
+      try {
+        const data = await getBikeData(currentUser.uid);
+        console.log('DB data =>', data);
+        if (data) {
+          // Use trim para remover espaços extras
+          const brandNormalized = (data.make || '').trim();
+          const modelNormalized = (data.model || '').trim();
+          const newData = { ...data, make: brandNormalized, model: modelNormalized };
+          setBikeData(newData);
+          reset(newData);
+          // Defina a marca e os modelos com base no DB
+          setSelectedBrand(brandNormalized);
+          if (brandNormalized && brandsData[brandNormalized]) {
+            setAvailableModels(brandsData[brandNormalized]);
           }
-        } catch (error) {
-          console.error('Erro ao buscar dados da moto:', error);
-          toast({
-            title: 'Erro!',
-            description: 'Erro ao buscar dados da moto.',
-            variant: 'destructive',
-          });
-        } finally {
-          setIsLoading(false);
+        } else {
+          setBikeData(null);
+          reset(defaultValues);
         }
-      };
-      if (currentUser) {
-        setIsLoading(true);
-        fetchBikeData();
-      } else {
-        setIsLoading(false); // If no currentUser, also set loading to false
+      } catch (err) {
+        console.error('Erro ao buscar dados da moto:', err);
+        toast({
+          title: 'Erro!',
+          description: 'Erro ao buscar dados da moto.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
       }
-    }, [currentUser, toast, reset]);
-  
-    useEffect(() => {
-      if (bikeData) {
-        reset(bikeData);
-      }
-    }, [bikeData, reset]);
+    }
+    if (currentUser) fetchData();
+  }, [currentUser, reset, toast]);
 
+  // Atualiza a lista de modelos quando a marca selecionada mudar
+  useEffect(() => {
+    if (selectedBrand && brandsData[selectedBrand]) {
+      setAvailableModels(brandsData[selectedBrand]);
+      // NÃO limpamos o modelo automaticamente; queremos manter o valor carregado
+    }
+  }, [selectedBrand]);
 
-  
+  // Lida com a placa (insere hífen automaticamente)
+  function handlePlateChange(value: string) {
+    let numeric = value.replace(/[^\d]/g, '');
+    if (numeric.length > 4) {
+      numeric = numeric.slice(0, 4) + '-' + numeric.slice(4, 7);
+    }
+    setValue('plate', numeric);
+  }
 
-  const onSubmit = async (data: BikeData) => {
+  // Botões preset de quilometragem
+  function setMileagePreset(mileage: number) {
+    setValue('initialMileage', mileage);
+  }
+
+  async function onSubmit(data: BikeData) {
     setFormLoading(true);
-    setFormError('');
     try {
-      if (!currentUser) throw new Error('Usuario não autenticado');
+      if (!currentUser) throw new Error('Usuário não autenticado');
       await registerBike(currentUser.uid, data);
       setBikeData(data);
-      toast({ title: 'Sucesso!', description: 'Dados da moto atualizados!', className: 'bg-green-500 text-white' }); // Toast verde
-    } catch (error: any) {
-      setFormError(error.message);
+      toast({
+        title: 'Sucesso!',
+        description: 'Dados da moto atualizados!',
+        className: 'bg-green-500 text-white',
+      });
+    } catch (err: any) {
+      console.error('Erro ao registrar moto:', err);
       toast({
         title: 'Erro!',
         description: 'Erro ao registrar moto. Tente novamente.',
@@ -132,7 +211,7 @@ export default function RegisterBikePage() {
     } finally {
       setFormLoading(false);
     }
-  };
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -157,10 +236,13 @@ export default function RegisterBikePage() {
                 Abastecimento
               </TabsTrigger>
             </TabsList>
+
             <TabsContent value="info">
-              <Form {...form}>
+              <Form {...formMethods}>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  {/* Linha: Marca e Modelo */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Marca */}
                     <FormField
                       control={control}
                       name="make"
@@ -168,12 +250,32 @@ export default function RegisterBikePage() {
                         <FormItem>
                           <FormLabel>Marca</FormLabel>
                           <FormControl>
-                            <Input placeholder="Digite a marca" {...field} />
+                            <Select
+                              onValueChange={(val) => {
+                                const brandNormalized = val.trim();
+                                field.onChange(brandNormalized);
+                                setSelectedBrand(brandNormalized);
+                              }}
+                              value={field.value || ''}
+                            >
+                              <SelectTrigger className={`w-full bg-gray-800 ${errors.make ? 'border-red-500' : ''}`}>
+                                <SelectValue placeholder="Selecione a marca" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800">
+                                {Object.keys(brandsData).map((brand) => (
+                                  <SelectItem key={brand} value={brand}>
+                                    {brand}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </FormControl>
                           <FormMessage>{errors.make?.message}</FormMessage>
                         </FormItem>
                       )}
                     />
+
+                    {/* Modelo */}
                     <FormField
                       control={control}
                       name="model"
@@ -181,14 +283,15 @@ export default function RegisterBikePage() {
                         <FormItem>
                           <FormLabel>Modelo</FormLabel>
                           <FormControl>
-                            <Select control={control} {...field}>
-                              <SelectTrigger className="w-full">
+                            {/* A propriedade key força a remontagem quando a marca muda */}
+                            <Select key={selectedBrand} onValueChange={field.onChange} value={field.value || ''}>
+                              <SelectTrigger className={`w-full bg-gray-800 ${errors.model ? 'border-red-500' : ''}`}>
                                 <SelectValue placeholder="Selecione o modelo" />
                               </SelectTrigger>
-                              <SelectContent>
-                                {models.map((model) => (
-                                  <SelectItem key={model} value={model}>
-                                    {model}
+                              <SelectContent className="bg-gray-800">
+                                {availableModels.map((m) => (
+                                  <SelectItem key={m.model} value={m.model}>
+                                    {m.model} ({m.cc} cc)
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -199,31 +302,39 @@ export default function RegisterBikePage() {
                       )}
                     />
                   </div>
+
+                  {/* Linha: Ano e Placa */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                        control={control}
-                        name="year"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Ano</FormLabel>
-                            <FormControl>
-                              <Select control={control} {...field}>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Selecione o ano" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {years.map((yearOption) => (
-                                    <SelectItem key={yearOption} value={yearOption}>
-                                      {yearOption}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage>{errors.year?.message}</FormMessage>
-                          </FormItem>
+                    {/* Ano */}
+                    <FormField
+                      control={control}
+                      name="year"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ano</FormLabel>
+                          <FormControl>
+                            <Select
+                              onValueChange={(val) => field.onChange(Number(val))}
+                              value={field.value ? field.value.toString() : ''}
+                            >
+                              <SelectTrigger className={`w-full bg-gray-800 ${errors.year ? 'border-red-500' : ''}`}>
+                                <SelectValue placeholder="Selecione o ano" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800">
+                                {years.map((yearOption) => (
+                                  <SelectItem key={yearOption} value={yearOption.toString()}>
+                                    {yearOption}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage>{errors.year?.message}</FormMessage>
+                        </FormItem>
                       )}
                     />
+
+                    {/* Placa */}
                     <FormField
                       control={control}
                       name="plate"
@@ -231,14 +342,28 @@ export default function RegisterBikePage() {
                         <FormItem>
                           <FormLabel>Placa</FormLabel>
                           <FormControl>
-                            <Input placeholder="Digite a placa" {...field} />
+                            <Input
+                              placeholder="Digite a placa (ex.: 1234-567)"
+                              value={field.value}
+                              onChange={(e) => {
+                                let numeric = e.target.value.replace(/[^\d]/g, '');
+                                if (numeric.length > 4) {
+                                  numeric = numeric.slice(0, 4) + '-' + numeric.slice(4, 7);
+                                }
+                                field.onChange(numeric);
+                              }}
+                              className={`${errors.plate ? 'border-red-500' : ''}`}
+                            />
                           </FormControl>
                           <FormMessage>{errors.plate?.message}</FormMessage>
                         </FormItem>
                       )}
                     />
                   </div>
+
+                  {/* Linha: Cor e Quilometragem */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Cor */}
                     <FormField
                       control={control}
                       name="color"
@@ -246,12 +371,12 @@ export default function RegisterBikePage() {
                         <FormItem>
                           <FormLabel>Cor</FormLabel>
                           <FormControl>
-                            <Select control={control} {...field}>
-                              <SelectTrigger className="w-full">
+                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                              <SelectTrigger className={`w-full bg-gray-800 ${errors.color ? 'border-red-500' : ''}`}>
                                 <SelectValue placeholder="Selecione a cor" />
                               </SelectTrigger>
-                              <SelectContent>
-                                {colors.map((colorOption) => (
+                              <SelectContent className="bg-gray-800">
+                                {['Preto', 'Branco', 'Vermelho', 'Azul'].map((colorOption) => (
                                   <SelectItem key={colorOption} value={colorOption}>
                                     {colorOption}
                                   </SelectItem>
@@ -263,45 +388,77 @@ export default function RegisterBikePage() {
                         </FormItem>
                       )}
                     />
+
+                    {/* Quilometragem */}
                     <FormField
-                      controlId="initialMileage"
+                      control={control}
                       name="initialMileage"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Quilometragem Inicial (km)</FormLabel>
                           <FormControl>
-                            <Input type="number" placeholder="KM Inicial" {...field} />
+                            <Input
+                              type="text"
+                              placeholder="Digite a quilometragem"
+                              {...field}
+                              className={`${errors.initialMileage ? 'border-red-500' : ''}`}
+                            />
                           </FormControl>
+                          <div className="mt-2 flex space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => setMileagePreset(0)}>
+                              0 km
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setMileagePreset(500)}>
+                              500 km
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setMileagePreset(1000)}>
+                              1.000 km
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setMileagePreset(10000)}>
+                              10.000 km
+                            </Button>
+                          </div>
                           <FormMessage>{errors.initialMileage?.message}</FormMessage>
                           <FormDescription>
                             <FontAwesomeIcon icon={faInfoCircle} className="mr-1 inline-block h-3 w-3" />
-                            Informe a quilometragem atual da sua moto.
+                            Valor formatado: {formatMileage(mileageValue)}
                           </FormDescription>
                         </FormItem>
                       )}
                     />
                   </div>
+
+                  <Button
+                    type="submit"
+                    disabled={formLoading}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white mt-4"
+                  >
+                    {bikeData ? 'Atualizar Informações' : 'Registrar Moto'}
+                  </Button>
                 </form>
               </Form>
             </TabsContent>
+
             <TabsContent value="maintenance">
               <div>
-                Conteúdo da aba Manutenção
+                <p>Aqui você poderá definir intervalos de manutenção e trocas de peças.</p>
               </div>
             </TabsContent>
+
             <TabsContent value="fuel">
               <div>
-                Conteúdo da aba Abastecimento
+                <p>Aqui você poderá cadastrar a capacidade do tanque e definir a média de consumo.</p>
               </div>
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
 
-      <Button type="submit" onClick={handleSubmit(onSubmit)} disabled={formLoading} className="w-full">
-        {bikeData ? 'Atualizar Informações' : 'Registrar Moto'}
-      </Button>
-      <Button variant="secondary" onClick={() => router.push('/bike/view')} className="ml-2 w-full md:w-auto">
+      <Button
+        variant="secondary"
+        onClick={() => router.push('/bike/view')}
+        className="ml-2 w-full md:w-auto"
+      >
         Visualizar Moto
       </Button>
     </div>

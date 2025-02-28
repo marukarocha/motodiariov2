@@ -18,13 +18,13 @@ import { getAuth, signOut } from "firebase/auth";
 
 // Configuração do Firebase (substitua com suas credenciais)
 const firebaseConfig = {
-  apiKey: "AIzaSyC9u70PEbq3rC4NDx57rR4A4IGPReY0TqY",
-  authDomain: "diariomoto-8543b.firebaseapp.com",
-  projectId: "diariomoto-8543b",
-  storageBucket: "diariomoto-8543b.firebasestorage.app",
-  messagingSenderId: "476460880603",
-  appId: "1:476460880603:web:5ea74d97089e197c3e32fe",
-  measurementId: "G-ZJZJ7X3MV0",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // Inicializa o Firebase
@@ -164,26 +164,29 @@ async function deleteMaintenance(userId: string, maintenanceId: string): Promise
 }
 
 /* =======================
-   FUNÇÕES PARA A MOTO
+   FUNÇÕES PARA BIKE
    ======================= */
 
 // Função para registrar os dados da moto
 async function registerBike(userId: string, bikeData: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
-  await setDoc(userRef, { bike: bikeData }, { merge: true });
+  // Salva os dados da moto no subdocumento "configurations/bike"
+  const bikeDocRef = doc(userRef, "configurations", "bike");
+  await setDoc(bikeDocRef, bikeData, { merge: true });
 }
 
 // Função para obter os dados da moto de um usuário
 async function getBikeData(userId: string): Promise<Record<string, unknown> | null> {
   const userRef = doc(db, "users", userId);
-  const docSnap = await getDoc(userRef);
+  // Busca o subdocumento "configurations/bike"
+  const bikeDocRef = doc(userRef, "configurations", "bike");
+  const docSnap = await getDoc(bikeDocRef);
   if (docSnap.exists()) {
-    return (docSnap.data().bike as Record<string, unknown>) || null;
+    return docSnap.data() as Record<string, unknown>;
   } else {
     return null;
   }
 }
-
 /* =======================
    FUNÇÕES PARA ABASTECIMENTOS
    ======================= */

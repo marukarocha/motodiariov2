@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Person from "./person";
-import { Header } from "@/components/header";
+import PlatformUser from "./platformUser"; // importe o componente de seleção de plataformas
 import { User, Smartphone, Settings } from "lucide-react";
 
 export default function ProfilePage() {
@@ -10,7 +10,6 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-4">
-      <Header />
       <div className="container mx-auto p-4">
         <div className="flex flex-col md:flex-row">
           {/* Sidebar: no mobile, exibida acima do conteúdo */}
@@ -51,9 +50,10 @@ export default function ProfilePage() {
             {selectedTab === "aplicativos" && (
               <div>
                 <h2 className="text-2xl font-bold mb-4">Aplicativos</h2>
-                <p>
-                  Aqui o usuário poderá escolher as plataformas e tipos de corrida para os ganhos.
+                <p className="mb-4">
+                  Escolha as plataformas que você deseja utilizar:
                 </p>
+                <PlatformUser />
               </div>
             )}
             {selectedTab === "conta" && (

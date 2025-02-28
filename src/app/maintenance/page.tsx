@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { Header } from "@/components/header";
 import { getMaintenance, deleteMaintenance } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -61,7 +60,6 @@ export default function ManutencoesPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <Header />
       <h1 className="text-2xl font-bold">Manutenções</h1>
       
       {/* Dashboard com botões para registrar manutenções */}

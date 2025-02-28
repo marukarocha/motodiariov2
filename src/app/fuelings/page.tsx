@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Header } from '@/components/header';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -82,7 +81,6 @@ export default function FuelingsPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <Header />
       <h1 className="text-2xl font-bold mb-4">Seus Abastecimentos</h1>
       <div className='flex m-5'>
       <RegisterFuelingButton onFuelingAdded={fetchData} />

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RegisterEarningButton } from "@/app/earnings/RegisterEarningButton";
 import { EarningsSummary } from "@/app/earnings/EarningsSummary";
@@ -54,7 +53,6 @@ export default function EarningsPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <Header />
       <h1 className="text-2xl font-bold mb-4">Seus Ganhos</h1>
 
       <div className="flex flex-wrap gap-4 mb-4">

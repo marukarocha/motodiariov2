@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Stepper from "@/components/ui/stepper";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
-import { addEarning } from "@/lib/db/firebaseServices";
+import { addEarning, getUserProfile } from "@/lib/db/firebaseServices";
 import {
   DialogContent,
   DialogHeader,
@@ -18,9 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { NumericFormat } from "react-number-format";
 import { User, MapPin, DollarSign, ClipboardList } from "lucide-react";
 
-// Arrays de opções
-const platformOptions = ["Uber", "99", "Ifood", "Indrive", "Particular"];
-const rideTypeOptions = ["Passageiro", "Entrega", "Compras", "Comida"];
+// Ride type agora será filtrado dinamicamente a partir da plataforma selecionada.
+// timeOptions e steps permanecem fixos.
 const timeOptions = ["15", "30", "45", "60", "75", "90"];
 const steps = [
   { number: 1, label: "Plataforma e Tipo", icon: User },
@@ -29,74 +28,116 @@ const steps = [
   { number: 4, label: "Extras", icon: ClipboardList },
 ];
 
-// Classes de estilo
 const fieldInputClasses =
   "py-5 px-6 text-[1.2rem] h-[3rem] border border-gray-300 focus:border-blue-500 focus:outline-none";
 const selectButtonClasses =
   "py-3 px-6 text-2xl h-[4rem] border border-gray-300 focus:border-blue-500";
 
-interface RegisterEarningsProps {
-  onClose: () => void;
-  onEarningAdded: () => void;
-}
+// STEP 1 – Atualizado para separar Plataforma e Tipo de Corrida
+// Recebe:
+//   - formValues, setFormValues, setInputFocused (controle do formulário)
+//   - platformOptions: array de { id, name, associatedRaceTypes }
+//   - allRideTypes: array de { id, type }
+const Step1 = ({
+  formValues,
+  setFormValues,
+  setInputFocused,
+  platformOptions,
+  allRideTypes,
+}) => {
+  const selectedPlatformObj = platformOptions.find(
+    (p) => p.name === formValues.platform
+  );
+  const filteredRideTypes =
+    selectedPlatformObj && selectedPlatformObj.associatedRaceTypes
+      ? allRideTypes.filter((rt) =>
+          selectedPlatformObj.associatedRaceTypes.includes(rt.id)
+        )
+      : [];
 
-// Função para converter "HH:MM" em minutos
-function convertTimeToMinutes(timeStr: string): number {
-  if (timeStr.includes(":")) {
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    return hours * 60 + minutes;
+  let instructionText = "";
+  if (!formValues.platform) {
+    instructionText = "Selecione a plataforma da corrida";
+  } else if (!formValues.rideType) {
+    instructionText = "Selecione o tipo de corrida";
+  } else {
+    instructionText = "Pronto!";
   }
-  return parseInt(timeStr, 10);
-}
 
-//
-// COMPONENTES DOS STEPS – com onFocusCapture/onBlurCapture para atualizar o estado
-//
+  return (
+    <div
+      className="p-4 space-y-6"
+      onFocusCapture={() => setInputFocused(true)}
+      onBlurCapture={() => setInputFocused(false)}
+    >
+      {/* Campo de instrução com fade */}
+      <div className="p-2 rounded-md bg-yellow-100 text-yellow-900 text-center text-sm font-medium transition-opacity duration-300">
+        {instructionText}
+      </div>
 
-interface StepProps {
-  formValues: any;
-  setFormValues: (v: any) => void;
-  setInputFocused: (flag: boolean) => void;
-}
+      {/* Seção: Plataforma */}
+      <div>
+        <Label className="mb-2 text-base font-semibold">Plataforma</Label>
+        {platformOptions && platformOptions.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2">
+            {platformOptions.map((option) => (
+              <Button
+                key={option.id}
+                variant={formValues.platform === option.name ? "default" : "outline"}
+                onClick={() =>
+                  setFormValues({ ...formValues, platform: option.name, rideType: "" })
+                }
+                className={`py-2 px-3 text-sm h-[3rem] border ${
+                  formValues.platform === option.name
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : ""
+                }`}
+              >
+                {option.name}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-sm text-muted-foreground">
+            Nenhuma plataforma configurada. Atualize seu perfil.
+          </p>
+        )}
+      </div>
 
-const Step1: React.FC<StepProps> = ({ formValues, setFormValues, setInputFocused }) => (
-  <div
-    className="p-4 space-y-6"
-    onFocusCapture={() => setInputFocused(true)}
-    onBlurCapture={() => setInputFocused(false)}
-  >
-    <div className="grid grid-cols-2 gap-4">
-      {platformOptions.map((option) => (
-        <Button
-          key={option}
-          variant={formValues.platform === option ? "default" : "outline"}
-          onClick={() => setFormValues({ ...formValues, platform: option })}
-          className={`${selectButtonClasses} ${
-            formValues.platform === option ? "bg-blue-600 text-white border-blue-600" : ""
-          }`}
-        >
-          {option}
-        </Button>
-      ))}
+      {/* Seção: Tipo de Corrida */}
+      <div>
+        {selectedPlatformObj && filteredRideTypes.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2">
+            {filteredRideTypes.map((option) => (
+              <Button
+                key={option.id}
+                variant={formValues.rideType === option.type ? "default" : "outline"}
+                onClick={() =>
+                  setFormValues({ ...formValues, rideType: option.type })
+                }
+                className={`py-2 px-3 text-sm h-[3rem] border ${
+                  formValues.rideType === option.type
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : ""
+                }`}
+              >
+                {option.type}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-sm text-muted-foreground">
+            {selectedPlatformObj
+              ? "Nenhum tipo de corrida associado à plataforma selecionada."
+              : "Selecione uma plataforma para ver os tipos de corrida."}
+          </p>
+        )}
+      </div>
     </div>
-    <div className="grid grid-cols-2 gap-4">
-      {rideTypeOptions.map((option) => (
-        <Button
-          key={option}
-          variant={formValues.rideType === option ? "default" : "outline"}
-          onClick={() => setFormValues({ ...formValues, rideType: option })}
-          className={`${selectButtonClasses} ${
-            formValues.rideType === option ? "bg-blue-600 text-white border-blue-600" : ""
-          }`}
-        >
-          {option}
-        </Button>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
-const Step2: React.FC<StepProps> = ({ formValues, setFormValues, setInputFocused }) => (
+const Step2 = ({ formValues, setFormValues, setInputFocused }) => (
   <div
     className="p-4 space-y-6"
     onFocusCapture={() => setInputFocused(true)}
@@ -130,7 +171,6 @@ const Step2: React.FC<StepProps> = ({ formValues, setFormValues, setInputFocused
           </Button>
         ))}
       </div>
-      {/* Campo para entrada de tempo no formato HH:MM */}
       <Input
         type="time"
         placeholder="Ou digite manualmente"
@@ -144,7 +184,7 @@ const Step2: React.FC<StepProps> = ({ formValues, setFormValues, setInputFocused
   </div>
 );
 
-const Step3: React.FC<StepProps> = ({ formValues, setFormValues, setInputFocused }) => (
+const Step3 = ({ formValues, setFormValues, setInputFocused }) => (
   <div
     className="p-4 space-y-6"
     onFocusCapture={() => setInputFocused(true)}
@@ -165,7 +205,7 @@ const Step3: React.FC<StepProps> = ({ formValues, setFormValues, setInputFocused
   </div>
 );
 
-const Step4: React.FC<StepProps> = ({ formValues, setFormValues, setInputFocused }) => (
+const Step4 = ({ formValues, setFormValues, setInputFocused }) => (
   <div
     className="p-4 space-y-6"
     onFocusCapture={() => setInputFocused(true)}
@@ -260,9 +300,6 @@ const Step4: React.FC<StepProps> = ({ formValues, setFormValues, setInputFocused
   </div>
 );
 
-//
-// COMPONENTE PRINCIPAL
-//
 interface Props {
   onClose: () => void;
   onEarningAdded: () => void;
@@ -290,9 +327,13 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
     showDescription: false,
   });
 
-  // Estado global para saber se algum campo está focado
+  // Estados para as plataformas do usuário e todos os ride types
+  const [userPlatforms, setUserPlatforms] = useState<
+    { id: string; name: string; associatedRaceTypes: string[] }[]
+  >([]);
+  const [allRideTypes, setAllRideTypes] = useState<{ id: string; type: string }[]>([]);
+
   const [isInputFocused, setInputFocused] = useState(false);
-  // Guarda o timestamp da última alteração
   const [lastChange, setLastChange] = useState(Date.now());
 
   function handleChange(newValues: any) {
@@ -300,7 +341,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
     setLastChange(Date.now());
   }
 
-  // Auto-avança se o step estiver completo, 1,5s se passaram e nenhum campo estiver focado
   useEffect(() => {
     if (isStepComplete(currentStep) && currentStep < totalSteps && !isInputFocused) {
       const timer = setTimeout(() => {
@@ -325,10 +365,55 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
     }
   }
 
+  // Busca as plataformas configuradas pelo usuário
+  useEffect(() => {
+    async function fetchUserPlatforms() {
+      if (!currentUser) return;
+      try {
+        const profile = await getUserProfile(currentUser.uid);
+        if (profile && profile.preferredPlatforms && profile.preferredPlatforms.length > 0) {
+          const res = await fetch("/api/admin/platforms");
+          const allPlatforms = await res.json();
+          const filtered = allPlatforms.filter((p: any) =>
+            profile.preferredPlatforms.includes(p.id)
+          );
+          setUserPlatforms(filtered);
+          // Inicia sem seleção, deixando os campos vazios
+          handleChange({ platform: "", rideType: "" });
+        }
+      } catch (error) {
+        console.error("Erro ao buscar plataformas do usuário:", error);
+      }
+    }
+    fetchUserPlatforms();
+  }, [currentUser]);
+
+  // Busca todos os ride types
+  useEffect(() => {
+    async function fetchRideTypes() {
+      try {
+        const res = await fetch("/api/admin/raceTypes");
+        const data = await res.json();
+        setAllRideTypes(data);
+      } catch (error) {
+        console.error("Erro ao buscar tipos de corrida:", error);
+      }
+    }
+    fetchRideTypes();
+  }, []);
+
   function renderStep() {
     switch (currentStep) {
       case 1:
-        return <Step1 formValues={formValues} setFormValues={handleChange} setInputFocused={setInputFocused} />;
+        return (
+          <Step1
+            formValues={formValues}
+            setFormValues={handleChange}
+            setInputFocused={setInputFocused}
+            platformOptions={userPlatforms}
+            allRideTypes={allRideTypes}
+          />
+        );
       case 2:
         return <Step2 formValues={formValues} setFormValues={handleChange} setInputFocused={setInputFocused} />;
       case 3:
@@ -338,6 +423,14 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
       default:
         return null;
     }
+  }
+
+  function convertTimeToMinutes(timeStr: string): number {
+    if (timeStr.includes(":")) {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      return hours * 60 + minutes;
+    }
+    return parseInt(timeStr, 10);
   }
 
   async function handleSubmit() {
@@ -376,7 +469,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
         variant: "success",
         className: "bg-green-700 text-white",
       });
-      // Reseta o formulário
       setFormValues({
         platform: "",
         rideType: "",

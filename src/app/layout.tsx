@@ -6,7 +6,7 @@ import type React from "react" // Added import for React
 import { AuthProvider } from '@/components/USER/Auth/AuthContext';
 import { AuthGuard } from '@/components/USER/Auth/authGuard';
 import { Toaster } from "@/components/ui/toaster"
-import PageTransition from '@/components/ui/PageTransition'; // Import PageTransition
+import { Header } from '@/components/header';
 
 
 
@@ -26,12 +26,11 @@ export default function RootLayout({
     // <html lang="en" suppressHydrationWarning>
     <html lang="br" >
       <body className={inter.className}>
+       <div className=""><Header /></div>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem >
           <AuthProvider>
             <AuthGuard>
-              <PageTransition> {/* Wrap children with PageTransition */}
                 {children}
-              </PageTransition>
               <Toaster />
             </AuthGuard>
           </AuthProvider>

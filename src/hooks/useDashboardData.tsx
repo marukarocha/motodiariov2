@@ -17,7 +17,12 @@ interface Earning {
 interface User {
   uid: string;
   email: string | null;
-  name: string | null;
+  firstName: string;
+  lastName: string;
+  nickname: string;
+  useNickname: boolean;
+  bloodType: string;
+  emergencyPhone: string;
   role: string;
 }
 
@@ -42,46 +47,48 @@ export const useDashboardData = (): DashboardData => {
     const fetchUserData = async () => {
       if (uid) {
         try {
-          console.log("fetchUserData: UID from localStorage:", uid);
           const userConfig = await getUserConfig(uid);
           if (userConfig) {
             setDashboardData(prev => ({
               ...prev,
               userData: {
                 uid,
-                email: userConfig.email || null,
-                name: userConfig.name || 'N/A',
-                role: userConfig.role || 'user',
+                email: userConfig.email ? String(userConfig.email) : null,
+                firstName: userConfig.firstName ? String(userConfig.firstName) : "",
+                lastName: userConfig.lastName ? String(userConfig.lastName) : "",
+                nickname: userConfig.nickname ? String(userConfig.nickname) : "",
+                useNickname: Boolean(userConfig.useNickname),
+                bloodType: userConfig.bloodType ? String(userConfig.bloodType) : "",
+                emergencyPhone: userConfig.emergencyPhone ? String(userConfig.emergencyPhone) : "",
+                role: userConfig.role ? String(userConfig.role) : "user",
               },
             }));
           } else {
-            // Não setar erro para usuário novo sem dados registrados
-            console.log("fetchUserData: User config not found for UID:", uid);
+            console.log("User config not found for UID:", uid);
             setDashboardData(prev => ({
               ...prev,
               userData: null,
             }));
           }
         } catch (error: any) {
-          console.error("fetchUserData: Error:", error);
+          console.error("Erro ao carregar dados do usuário:", error);
           setDashboardData(prev => ({
             ...prev,
             error: `Erro ao carregar dados do usuário: ${error.message}`,
           }));
         }
       } else {
-        console.log("fetchUserData: UID not found in localStorage.");
+        console.log("UID não encontrado no localStorage.");
       }
     };
 
     const fetchEarningsData = async () => {
       if (uid) {
         try {
-          console.log("fetchEarningsData: fetching earnings for UID:", uid);
-          const userEarnings = await getEarnings(uid);
+          const earnings = await getEarnings(uid);
           setDashboardData(prev => ({
             ...prev,
-            earnings: userEarnings as Earning[],
+            earnings: earnings as Earning[],
           }));
         } catch (error: any) {
           setDashboardData(prev => ({

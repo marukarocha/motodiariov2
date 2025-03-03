@@ -311,7 +311,7 @@ export default function Person() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input placeholder="Email" disabled {...field} className="text-sm bg-gray-100" />
+                    <Input placeholder="Email" disabled {...field} className="text-sm " />
                   </FormControl>
                   {errors.email && <FormMessage>{errors.email.message}</FormMessage>}
                 </FormItem>

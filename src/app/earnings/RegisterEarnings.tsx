@@ -14,13 +14,223 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
 import { NumericFormat } from "react-number-format";
+import { useToast } from "@/hooks/use-toast";
 import { User, MapPin, DollarSign, ClipboardList } from "lucide-react";
 
-// Ride type agora será filtrado dinamicamente a partir da plataforma selecionada.
-// timeOptions e steps permanecem fixos.
-const timeOptions = ["15", "30", "45", "60", "75", "90"];
+// Valores pré-definidos
+const preDefinedMileage = [1, 5, 10, 20, 30, 50];
+const preDefinedTimes = [15, 30, 45, 60, 75, 90];
+const preDefinedHours = [0, 1, 2, 3, 4, 5];
+const preDefinedMinutes = [0, 15, 30, 45];
+const preDefinedAmounts = [5, 10, 20, 50];
+const preDefinedCentavos = [0, 25, 50, 75, 99];
+
+//
+// COMPONENTES AUXILIARES
+//
+
+// Quilometragem – NumericFormat sem fundo; inputs maiores (w-48, text-5xl)
+const MileageSelector = ({ value, onChange }) => {
+  const increment = () => onChange(Number(value) + 1);
+  const decrement = () =>
+    onChange(Number(value) > 0 ? Number(value) - 1 : 0);
+  return (
+    <div className="flex flex-col items-center space-y-2">
+      <div className="flex items-center gap-4">
+        <Button onClick={decrement} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">
+          –
+        </Button>
+        <NumericFormat
+          value={value}
+          onValueChange={({ floatValue }) => onChange(floatValue || 0)}
+          thousandSeparator="."
+          decimalSeparator=","
+          decimalScale={1}
+          fixedDecimalScale={true}
+          suffix=" km"
+          placeholder="Distância"
+          customInput={Input}
+          className="w-48 text-center text-2xl bg-transparent"
+        />
+        <Button onClick={increment} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">
+          +
+        </Button>
+      </div>
+      <div className="flex flex-wrap gap-2 justify-center">
+        {preDefinedMileage.map((km) => (
+          <Button
+            key={km}
+            variant={Number(value) === km ? "default" : "outline"}
+            onClick={() => onChange(km)}
+            className="py-1 px-2 text-sm h-8"
+          >
+            {km} km
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Tempo – inputs para Horas e Minutos com botões laterais, inputs maiores (w-48, text-5xl)
+const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
+  const totalTime = hours * 60 + minutes;
+  const handlePredefinedTime = (totalMinutes) => {
+    onChangeHours(Math.floor(totalMinutes / 60));
+    onChangeMinutes(totalMinutes % 60);
+  };
+  const increment = (val, setter, max = Infinity) => setter(val < max ? val + 1 : val);
+  const decrement = (val, setter) => setter(val > 0 ? val - 1 : 0);
+  return (
+    <div className="flex flex-col items-center space-y-4">
+      {/* Presets de tempo total */}
+  
+      {/* Inputs para Horas e Minutos */}
+      <div className="flex gap-8">
+        <div className="flex flex-col items-center">
+          <Label className="mb-1 text-sm font-semibold">Horas</Label>
+          <div className="flex items-center gap-4">
+            <Button onClick={() => decrement(hours, onChangeHours)} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">
+              –
+            </Button>
+            <Input
+              type="number"
+              value={hours}
+              onChange={(e) => onChangeHours(parseInt(e.target.value) || 0)}
+              className="w-20 text-center text-2xl bg-transparent"
+              style={{ MozAppearance: "textfield" }}
+            />
+            <Button onClick={() => increment(hours, onChangeHours)} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">
+              +
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2 justify-center mt-2">
+            {preDefinedHours.map((hr) => (
+              <Button
+                key={hr}
+                variant={hours === hr ? "default" : "outline"}
+                onClick={() => onChangeHours(hr)}
+                className="py-1 px-2 text-sm h-8"
+              >
+                {hr}h
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col items-center">
+          <Label className="mb-1 text-sm font-semibold">Minutos</Label>
+          <div className="flex items-center gap-4">
+            <Button onClick={() => decrement(minutes, onChangeMinutes)} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">
+              –
+            </Button>
+            <Input
+              type="number"
+              value={minutes}
+              onChange={(e) => {
+                let val = parseInt(e.target.value) || 0;
+                if (val > 60) val = 60;
+                onChangeMinutes(val);
+              }}
+              className="w-20 text-center text-2xl bg-transparent"
+              style={{ MozAppearance: "textfield" }}
+              max={60}
+            />
+            <Button onClick={() => increment(minutes, onChangeMinutes, 60)} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">
+              +
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2 justify-center mt-2">
+            {preDefinedMinutes.map((min) => (
+              <Button
+                key={min}
+                variant={minutes === min ? "default" : "outline"}
+                onClick={() => onChangeMinutes(min)}
+                className="py-1 px-2 text-sm h-8"
+              >
+                {min}m
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Valor – NumericFormat para "R$ X,XX" com input maior (w-56, text-5xl)
+const AmountSelector = ({ amount, onChange }) => {
+  const formattedValue = Number(amount).toFixed(2);
+  const handlePresetReais = (val) => {
+    onChange(val);
+  };
+  const handlePresetCentavos = (val) => {
+    const integerPart = Math.floor(Number(amount));
+    onChange(integerPart + val / 100);
+  };
+  const increment = () => onChange(Number(amount) + 1);
+  const decrement = () => onChange(Number(amount) > 0 ? Number(amount) - 1 : 0);
+  return (
+    <div className="flex flex-col items-center space-y-4">
+      <Label className="mb-1 text-base font-semibold">Valor (R$)</Label>
+      <div className="flex items-center gap-2">
+        <Button onClick={decrement} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">
+          –
+        </Button>
+        <NumericFormat
+          value={amount}
+          onValueChange={({ floatValue }) => onChange(floatValue || 0)}
+          thousandSeparator="."
+          decimalSeparator=","
+          decimalScale={2}
+          fixedDecimalScale={true}
+          prefix="R$ "
+          placeholder="Valor"
+          customInput={Input}
+          className="w-56 text-center text-5xl bg-transparent"
+        />
+        <Button onClick={increment} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">
+          +
+        </Button>
+      </div>
+      <div className="flex flex-col items-center space-y-2">
+        <div className="flex flex-wrap gap-2 justify-center">
+          {preDefinedAmounts.map((amt) => (
+            <Button
+              key={amt}
+              variant={Math.floor(Number(amount)) === amt ? "default" : "outline"}
+              onClick={() => handlePresetReais(amt)}
+              className="py-1 px-2 text-sm h-8"
+            >
+              R$ {amt}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {preDefinedCentavos.map((cent) => (
+            <Button
+              key={cent}
+              variant={
+                Math.round((Number(amount) - Math.floor(Number(amount))) * 100) === cent
+                  ? "default"
+                  : "outline"
+              }
+              onClick={() => handlePresetCentavos(cent)}
+              className="py-1 px-2 text-sm h-8"
+            >
+              {cent}¢
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+//
+// COMPONENTES DOS PASSOS
+//
+
 const steps = [
   { number: 1, label: "Plataforma e Tipo", icon: User },
   { number: 2, label: "KM e Tempo", icon: MapPin },
@@ -33,28 +243,13 @@ const fieldInputClasses =
 const selectButtonClasses =
   "py-3 px-6 text-2xl h-[4rem] border border-gray-300 focus:border-blue-500";
 
-// STEP 1 – Atualizado para separar Plataforma e Tipo de Corrida
-// Recebe:
-//   - formValues, setFormValues, setInputFocused (controle do formulário)
-//   - platformOptions: array de { id, name, associatedRaceTypes }
-//   - allRideTypes: array de { id, type }
-const Step1 = ({
-  formValues,
-  setFormValues,
-  setInputFocused,
-  platformOptions,
-  allRideTypes,
-}) => {
-  const selectedPlatformObj = platformOptions.find(
-    (p) => p.name === formValues.platform
-  );
+// STEP 1 – Plataforma e Tipo de Corrida
+const Step1 = ({ formValues, setFormValues, setInputFocused, platformOptions, allRideTypes }) => {
+  const selectedPlatformObj = platformOptions.find((p) => p.name === formValues.platform);
   const filteredRideTypes =
     selectedPlatformObj && selectedPlatformObj.associatedRaceTypes
-      ? allRideTypes.filter((rt) =>
-          selectedPlatformObj.associatedRaceTypes.includes(rt.id)
-        )
+      ? allRideTypes.filter((rt) => selectedPlatformObj.associatedRaceTypes.includes(rt.id))
       : [];
-
   let instructionText = "";
   if (!formValues.platform) {
     instructionText = "Selecione a plataforma da corrida";
@@ -63,19 +258,15 @@ const Step1 = ({
   } else {
     instructionText = "Pronto!";
   }
-
   return (
     <div
       className="p-4 space-y-6"
       onFocusCapture={() => setInputFocused(true)}
       onBlurCapture={() => setInputFocused(false)}
     >
-      {/* Campo de instrução com fade */}
       <div className="p-2 rounded-md bg-yellow-100 text-yellow-900 text-center text-sm font-medium transition-opacity duration-300">
         {instructionText}
       </div>
-
-      {/* Seção: Plataforma */}
       <div>
         <Label className="mb-2 text-base font-semibold">Plataforma</Label>
         {platformOptions && platformOptions.length > 0 ? (
@@ -103,8 +294,6 @@ const Step1 = ({
           </p>
         )}
       </div>
-
-      {/* Seção: Tipo de Corrida */}
       <div>
         {selectedPlatformObj && filteredRideTypes.length > 0 ? (
           <div className="grid grid-cols-2 gap-2">
@@ -112,9 +301,7 @@ const Step1 = ({
               <Button
                 key={option.id}
                 variant={formValues.rideType === option.type ? "default" : "outline"}
-                onClick={() =>
-                  setFormValues({ ...formValues, rideType: option.type })
-                }
+                onClick={() => setFormValues({ ...formValues, rideType: option.type })}
                 className={`py-2 px-3 text-sm h-[3rem] border ${
                   formValues.rideType === option.type
                     ? "bg-blue-600 text-white border-blue-600"
@@ -137,6 +324,7 @@ const Step1 = ({
   );
 };
 
+// STEP 2 – Quilometragem e Tempo
 const Step2 = ({ formValues, setFormValues, setInputFocused }) => (
   <div
     className="p-4 space-y-6"
@@ -144,67 +332,39 @@ const Step2 = ({ formValues, setFormValues, setInputFocused }) => (
     onBlurCapture={() => setInputFocused(false)}
   >
     <div>
-      <NumericFormat
-        thousandSeparator={true}
-        suffix={" km"}
-        customInput={Input}
-        placeholder="Digite a quilometragem"
-        value={formValues.mileage || ""}
-        onValueChange={({ value }) => setFormValues({ ...formValues, mileage: value })}
-        className={fieldInputClasses}
+      <Label className="mb-2 text-base font-semibold">Quilometragem</Label>
+      <MileageSelector
+        value={formValues.mileage || 0}
+        onChange={(value) => setFormValues({ ...formValues, mileage: value })}
       />
     </div>
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        {timeOptions.map((option) => (
-          <Button
-            key={option}
-            variant={formValues.timeOption === option ? "default" : "outline"}
-            onClick={() =>
-              setFormValues({ ...formValues, timeOption: option, time: "" })
-            }
-            className={`${selectButtonClasses} ${
-              formValues.timeOption === option ? "bg-blue-600 text-white border-blue-600" : ""
-            }`}
-          >
-            {option} min
-          </Button>
-        ))}
-      </div>
-      <Input
-        type="time"
-        placeholder="Ou digite manualmente"
-        value={formValues.time || ""}
-        onChange={(e) =>
-          setFormValues({ ...formValues, time: e.target.value, timeOption: "" })
-        }
-        className={fieldInputClasses}
+    <div>
+      <Label className="mb-2 text-base font-semibold">Tempo da Corrida</Label>
+      <TimeSelector
+        hours={formValues.hours || 0}
+        minutes={formValues.minutes || 0}
+        onChangeHours={(value) => setFormValues({ ...formValues, hours: value })}
+        onChangeMinutes={(value) => setFormValues({ ...formValues, minutes: value })}
       />
     </div>
   </div>
 );
 
+// STEP 3 – Valor
 const Step3 = ({ formValues, setFormValues, setInputFocused }) => (
   <div
-    className="p-4 space-y-6"
+    className="p-4 space-y-6 flex justify-center"
     onFocusCapture={() => setInputFocused(true)}
     onBlurCapture={() => setInputFocused(false)}
   >
-    <NumericFormat
-      thousandSeparator="."
-      decimalSeparator=","
-      prefix="R$ "
-      fixedDecimalScale={true}
-      decimalScale={2}
-      customInput={Input}
-      placeholder="Digite o valor"
-      value={formValues.amount || ""}
-      onValueChange={({ value }) => setFormValues({ ...formValues, amount: value })}
-      className={fieldInputClasses}
+    <AmountSelector
+      amount={formValues.amount || 0}
+      onChange={(value) => setFormValues({ ...formValues, amount: value })}
     />
   </div>
 );
 
+// STEP 4 – Extras
 const Step4 = ({ formValues, setFormValues, setInputFocused }) => (
   <div
     className="p-4 space-y-6"
@@ -216,9 +376,7 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => (
         type="checkbox"
         className="h-6 w-6"
         checked={formValues.useManualDate || false}
-        onChange={(e) =>
-          setFormValues({ ...formValues, useManualDate: e.target.checked })
-        }
+        onChange={(e) => setFormValues({ ...formValues, useManualDate: e.target.checked })}
       />
       <Label className="text-2xl text-white">Usar data/hora personalizada?</Label>
     </div>
@@ -239,8 +397,8 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => (
           <Input
             type="time"
             placeholder="Selecione a hora"
-            value={formValues.time || ""}
-            onChange={(e) => setFormValues({ ...formValues, time: e.target.value })}
+            value={formValues.manualTime || ""}
+            onChange={(e) => setFormValues({ ...formValues, manualTime: e.target.value })}
             className={fieldInputClasses}
           />
         </div>
@@ -251,25 +409,18 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => (
         type="checkbox"
         className="h-6 w-6"
         checked={formValues.showTip || false}
-        onChange={(e) =>
-          setFormValues({ ...formValues, showTip: e.target.checked })
-        }
+        onChange={(e) => setFormValues({ ...formValues, showTip: e.target.checked })}
       />
       <Label className="text-2xl text-white">Recebeu gorjeta?</Label>
     </div>
     {formValues.showTip && (
       <div>
         <Label className="mb-2 text-2xl text-white">Gorjeta (R$)</Label>
-        <NumericFormat
-          thousandSeparator="."
-          decimalSeparator=","
-          prefix="R$ "
-          fixedDecimalScale={true}
-          decimalScale={2}
-          customInput={Input}
+        <Input
+          type="number"
           placeholder="Digite o valor da gorjeta"
           value={formValues.tip || ""}
-          onValueChange={({ value }) => setFormValues({ ...formValues, tip: value })}
+          onChange={(e) => setFormValues({ ...formValues, tip: e.target.value })}
           className={fieldInputClasses}
         />
       </div>
@@ -279,9 +430,7 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => (
         type="checkbox"
         className="h-6 w-6"
         checked={formValues.showDescription || false}
-        onChange={(e) =>
-          setFormValues({ ...formValues, showDescription: e.target.checked })
-        }
+        onChange={(e) => setFormValues({ ...formValues, showDescription: e.target.checked })}
       />
       <Label className="text-2xl text-white">Adicionar anotações?</Label>
     </div>
@@ -300,6 +449,10 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => (
   </div>
 );
 
+//
+// COMPONENTE PRINCIPAL
+//
+
 interface Props {
   onClose: () => void;
   onEarningAdded: () => void;
@@ -308,17 +461,15 @@ interface Props {
 export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
-
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = steps.length;
-
   const [formValues, setFormValues] = useState<any>({
     platform: "",
     rideType: "",
-    mileage: "",
-    timeOption: "",
-    time: "",
-    amount: "",
+    mileage: 0,
+    hours: 0,
+    minutes: 0,
+    amount: 0,
     tip: "",
     description: "",
     date: "",
@@ -326,21 +477,16 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
     showTip: false,
     showDescription: false,
   });
-
-  // Estados para as plataformas do usuário e todos os ride types
   const [userPlatforms, setUserPlatforms] = useState<
     { id: string; name: string; associatedRaceTypes: string[] }[]
   >([]);
   const [allRideTypes, setAllRideTypes] = useState<{ id: string; type: string }[]>([]);
-
   const [isInputFocused, setInputFocused] = useState(false);
   const [lastChange, setLastChange] = useState(Date.now());
-
   function handleChange(newValues: any) {
     setFormValues({ ...formValues, ...newValues });
     setLastChange(Date.now());
   }
-
   useEffect(() => {
     if (isStepComplete(currentStep) && currentStep < totalSteps && !isInputFocused) {
       const timer = setTimeout(() => {
@@ -349,23 +495,20 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
       return () => clearTimeout(timer);
     }
   }, [formValues, currentStep, lastChange, totalSteps, isInputFocused]);
-
   function isStepComplete(step: number): boolean {
     switch (step) {
       case 1:
         return !!(formValues.platform && formValues.rideType);
       case 2:
-        return !!(formValues.mileage && (formValues.time || formValues.timeOption));
+        return formValues.mileage > 0 && (formValues.hours > 0 || formValues.minutes > 0);
       case 3:
-        return !!formValues.amount;
+        return formValues.amount > 0;
       case 4:
         return true;
       default:
         return false;
     }
   }
-
-  // Busca as plataformas configuradas pelo usuário
   useEffect(() => {
     async function fetchUserPlatforms() {
       if (!currentUser) return;
@@ -378,7 +521,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
             profile.preferredPlatforms.includes(p.id)
           );
           setUserPlatforms(filtered);
-          // Inicia sem seleção, deixando os campos vazios
           handleChange({ platform: "", rideType: "" });
         }
       } catch (error) {
@@ -387,8 +529,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
     }
     fetchUserPlatforms();
   }, [currentUser]);
-
-  // Busca todos os ride types
   useEffect(() => {
     async function fetchRideTypes() {
       try {
@@ -401,7 +541,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
     }
     fetchRideTypes();
   }, []);
-
   function renderStep() {
     switch (currentStep) {
       case 1:
@@ -424,33 +563,16 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
         return null;
     }
   }
-
-  function convertTimeToMinutes(timeStr: string): number {
-    if (timeStr.includes(":")) {
-      const [hours, minutes] = timeStr.split(":").map(Number);
-      return hours * 60 + minutes;
-    }
-    return parseInt(timeStr, 10);
-  }
-
   async function handleSubmit() {
     if (!isStepComplete(1) || !isStepComplete(2) || !isStepComplete(3)) {
       alert("Preencha todos os campos obrigatórios.");
       return;
     }
-
-    const durationValue =
-      formValues.timeOption !== ""
-        ? parseInt(formValues.timeOption, 10)
-        : formValues.time !== ""
-        ? convertTimeToMinutes(formValues.time)
-        : 0;
-
+    const durationValue = (formValues.hours || 0) * 60 + (formValues.minutes || 0);
     const customDateTime =
-      formValues.useManualDate && formValues.date && formValues.time
-        ? new Date(`${formValues.date}T${formValues.time}:00`)
+      formValues.useManualDate && formValues.date && formValues.manualTime
+        ? new Date(`${formValues.date}T${formValues.manualTime}:00`)
         : new Date();
-
     const earning = {
       date: customDateTime,
       amount: parseFloat(formValues.amount),
@@ -461,7 +583,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
       tip: formValues.tip ? parseFloat(formValues.tip) : 0,
       description: formValues.description,
     };
-
     try {
       await addEarning(currentUser!.uid, earning);
       toast({
@@ -472,10 +593,10 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
       setFormValues({
         platform: "",
         rideType: "",
-        mileage: "",
-        timeOption: "",
-        time: "",
-        amount: "",
+        mileage: 0,
+        hours: 0,
+        minutes: 0,
+        amount: 0,
         tip: "",
         description: "",
         date: "",
@@ -491,13 +612,11 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
       alert("Erro ao registrar ganho. Tente novamente.");
     }
   }
-
   const variants = {
     initial: { opacity: 0, x: 50 },
     enter: { opacity: 1, x: 0, transition: { duration: 0.4 } },
     exit: { opacity: 0, x: -50, transition: { duration: 0.4 } },
   };
-
   return (
     <DialogContent className="sm:max-w-[600px] w-full p-6 bg-[#1C1B22] text-white">
       <DialogHeader className="mb-6 text-center">
@@ -514,7 +633,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
           />
         </div>
       </DialogHeader>
-
       <div style={{ position: "relative", minHeight: "250px" }}>
         <AnimatePresence mode="wait">
           <motion.div
@@ -529,7 +647,6 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
           </motion.div>
         </AnimatePresence>
       </div>
-
       <div className="flex items-center justify-start mt-6 pt-6 border-t border-gray-600 gap-4">
         {currentStep > 1 && (
           <Button

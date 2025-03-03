@@ -59,7 +59,7 @@ export function Header() {
         {/* Ações e menu mobile */}
         <div className="flex items-center space-x-2">
           {/* Ícone do perfil */}
-          <div className="hidden md:block">
+          <div className="">
             <Button variant="ghost" size="icon" onClick={() => router.push("/profile")}>
               <User className="h-4 w-4" />
               <span className="sr-only">Perfil</span>

@@ -1,11 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMotorcycle } from '@fortawesome/free-solid-svg-icons';
-import { Badge } from "@/components/ui/badge"
-import { BikeData } from '@/app/bike/register'; // Importe a interface BikeData
+import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { FaMotorcycle } from "react-icons/fa";
+import { Badge } from "@/components/ui/badge";
+import { BikeData } from '@/app/bike/register'; // Importa a interface atualizada de BikeData
 
 interface BikeCardProps {
   bikeData: BikeData | null;
@@ -17,7 +16,6 @@ const BadgeLevel = ({ level }: { level: string }) => (
     {level}
   </Badge>
 );
-
 
 export const BikeCard: React.FC<BikeCardProps> = ({ bikeData, isLoading }) => {
   
@@ -34,7 +32,7 @@ export const BikeCard: React.FC<BikeCardProps> = ({ bikeData, isLoading }) => {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="text-center md:text-left">
-            <FontAwesomeIcon icon={faMotorcycle} size="6x" className="text-primary mx-auto md:mx-0" />
+            <FaMotorcycle size={64} className="text-primary mx-auto md:mx-0" />
           </div>
           <div>
             <CardTitle className="text-2xl">
@@ -45,7 +43,7 @@ export const BikeCard: React.FC<BikeCardProps> = ({ bikeData, isLoading }) => {
             </CardDescription>
             <div className="mt-2 flex items-center">
               <p className="font-semibold">Nível da Moto:</p>
-              <BadgeLevel level="Intermediário" /> {/* Exemplo de Badge */}
+              <BadgeLevel level="Intermediário" />
             </div>
           </div>
         </div>
@@ -57,10 +55,6 @@ export const BikeCard: React.FC<BikeCardProps> = ({ bikeData, isLoading }) => {
           </div>
           <div>
             <p><strong>KM Inicial:</strong> {bikeData.initialMileage} km</p>
-            <p><strong>Capacidade Tanque:</strong> {bikeData.tankVolume} L</p>
-            {bikeData.averageConsumption !== null && (
-              <p><strong>Consumo Médio:</strong> {bikeData.averageConsumption} km/L</p>
-            )}
           </div>
         </div>
       </CardContent>

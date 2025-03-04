@@ -19,8 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { User, MapPin, DollarSign, ClipboardList } from "lucide-react";
 
 // Valores pré-definidos
-const preDefinedMileage = [1, 5, 10, 20, 30, 50];
-const preDefinedTimes = [15, 30, 45, 60, 75, 90];
+const preDefinedMileage = [1, 5, 10, 20, 30];
+// Removido: const preDefinedTimes = [15, 30, 45, 60, 75, 90];
 const preDefinedHours = [0, 1, 2, 3, 4, 5];
 const preDefinedMinutes = [0, 15, 30, 45];
 const preDefinedAmounts = [5, 10, 20, 50];
@@ -30,14 +30,14 @@ const preDefinedCentavos = [0, 25, 50, 75, 99];
 // COMPONENTES AUXILIARES
 //
 
-// Quilometragem – NumericFormat sem fundo; inputs maiores (w-48, text-5xl)
+// Quilometragem – NumericFormat sem fundo; inputs maiores (w-48, text-4xl)
 const MileageSelector = ({ value, onChange }) => {
   const increment = () => onChange(Number(value) + 1);
   const decrement = () =>
     onChange(Number(value) > 0 ? Number(value) - 1 : 0);
   return (
     <div className="flex flex-col items-center space-y-2">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 w-full justify-center">
         <Button onClick={decrement} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">
           –
         </Button>
@@ -73,24 +73,17 @@ const MileageSelector = ({ value, onChange }) => {
   );
 };
 
-// Tempo – inputs para Horas e Minutos com botões laterais, inputs maiores (w-48, text-5xl)
+// Tempo – inputs para Horas e Minutos com botões laterais; inputs maiores (w-48, text-4xl)
+// Removi a fileira de presets para tempo total.
 const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
-  const totalTime = hours * 60 + minutes;
-  const handlePredefinedTime = (totalMinutes) => {
-    onChangeHours(Math.floor(totalMinutes / 60));
-    onChangeMinutes(totalMinutes % 60);
-  };
   const increment = (val, setter, max = Infinity) => setter(val < max ? val + 1 : val);
   const decrement = (val, setter) => setter(val > 0 ? val - 1 : 0);
   return (
     <div className="flex flex-col items-center space-y-4">
-      {/* Presets de tempo total */}
-  
-      {/* Inputs para Horas e Minutos */}
-      <div className="flex gap-8">
+      <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
         <div className="flex flex-col items-center">
           <Label className="mb-1 text-sm font-semibold">Horas</Label>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 w-full justify-center">
             <Button onClick={() => decrement(hours, onChangeHours)} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">
               –
             </Button>
@@ -98,7 +91,7 @@ const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
               type="number"
               value={hours}
               onChange={(e) => onChangeHours(parseInt(e.target.value) || 0)}
-              className="w-20 text-center text-2xl bg-transparent"
+              className="w-48 text-center text-2xl bg-transparent"
               style={{ MozAppearance: "textfield" }}
             />
             <Button onClick={() => increment(hours, onChangeHours)} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">
@@ -120,7 +113,7 @@ const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
         </div>
         <div className="flex flex-col items-center">
           <Label className="mb-1 text-sm font-semibold">Minutos</Label>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 w-full justify-center">
             <Button onClick={() => decrement(minutes, onChangeMinutes)} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">
               –
             </Button>
@@ -132,7 +125,7 @@ const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
                 if (val > 60) val = 60;
                 onChangeMinutes(val);
               }}
-              className="w-20 text-center text-2xl bg-transparent"
+              className="w-48 text-center text-2xl bg-transparent"
               style={{ MozAppearance: "textfield" }}
               max={60}
             />
@@ -172,8 +165,7 @@ const AmountSelector = ({ amount, onChange }) => {
   const decrement = () => onChange(Number(amount) > 0 ? Number(amount) - 1 : 0);
   return (
     <div className="flex flex-col items-center space-y-4">
-      <Label className="mb-1 text-base font-semibold">Valor (R$)</Label>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         <Button onClick={decrement} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">
           –
         </Button>
@@ -187,7 +179,7 @@ const AmountSelector = ({ amount, onChange }) => {
           prefix="R$ "
           placeholder="Valor"
           customInput={Input}
-          className="w-56 text-center text-5xl bg-transparent"
+          className="w-full max-w-lg text-center text-2xl bg-transparent"
         />
         <Button onClick={increment} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">
           +
@@ -260,7 +252,7 @@ const Step1 = ({ formValues, setFormValues, setInputFocused, platformOptions, al
   }
   return (
     <div
-      className="p-4 space-y-6"
+      className="p-2 space-y-0"
       onFocusCapture={() => setInputFocused(true)}
       onBlurCapture={() => setInputFocused(false)}
     >
@@ -275,9 +267,7 @@ const Step1 = ({ formValues, setFormValues, setInputFocused, platformOptions, al
               <Button
                 key={option.id}
                 variant={formValues.platform === option.name ? "default" : "outline"}
-                onClick={() =>
-                  setFormValues({ ...formValues, platform: option.name, rideType: "" })
-                }
+                onClick={() => setFormValues({ ...formValues, platform: option.name, rideType: "" })}
                 className={`py-2 px-3 text-sm h-[3rem] border ${
                   formValues.platform === option.name
                     ? "bg-blue-600 text-white border-blue-600"

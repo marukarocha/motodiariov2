@@ -67,7 +67,11 @@ export default function EarningsPage() {
       </div>
 
       {/* Atualiza o EarningsSummary com os dados filtrados */}
-      <EarningsSummary earningsData={earningsData} />
+      <EarningsSummary 
+        earningsData={earningsData}
+        startDate={startDate}
+        endDate={endDate}
+      />
 
       <Card className="mt-6">
         {showCharts && (

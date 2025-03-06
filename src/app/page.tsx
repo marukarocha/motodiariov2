@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Motivation from '@/components/home/Motivation';
-import { Overview } from '@/components/overview';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import { AuthProvider } from '@/components/USER/Auth/AuthContext';
-import { AuthGuard } from '@/components/USER/Auth/authGuard';
-import { RegisterEarningButton } from '@/app/earnings/RegisterEarningButton';
-import { BikeCard } from '@/app/bike/components/BikeCard';
-import { OverviewBike } from '@/app/bike/components/OverviewBike';
-import WelcomeModal from '@/components/WelcomeModal';
-import { Heart } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import Motivation from "@/components/home/Motivation";
+import { Overview } from "@/components/overview";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { AuthProvider } from "@/components/USER/Auth/AuthContext";
+import { AuthGuard } from "@/components/USER/Auth/authGuard";
+import { RegisterEarningButton } from "@/app/earnings/RegisterEarningButton";
+import { BikeCard } from "@/app/bike/components/BikeCard";
+import { OverviewBike } from "@/app/bike/components/OverviewBike";
+import WelcomeModal from "@/components/WelcomeModal";
+import { Heart } from "lucide-react";
 
 export default function UserPage() {
   const { userData, earnings, error, loading } = useDashboardData();
@@ -18,7 +18,7 @@ export default function UserPage() {
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
 
   useEffect(() => {
-    console.log('UserData:', userData);
+    console.log("UserData:", userData);
     // Se os dados essenciais não estiverem preenchidos, consideramos o usuário novo
     if (userData && userData.firstName && userData.lastName) {
       setShowOverview(true);
@@ -44,11 +44,16 @@ export default function UserPage() {
 
   // Calcula o displayName: se useNickname for true e existir um nickname, usa-o; caso contrário, concatena firstName e lastName.
   const displayName = userData
-    ? userData.useNickname && userData.nickname && userData.nickname.trim() !== ""
+    ? userData.useNickname &&
+      userData.nickname &&
+      userData.nickname.trim() !== ""
       ? userData.nickname
-      : `${userData.firstName} ${userData.lastName}`.trim() || 'usuário'
-    : 'usuário';
+      : `${userData.firstName} ${userData.lastName}`.trim() || "usuário"
+    : "usuário";
 
+  // Define a URL da imagem do avatar, ou utiliza um placeholder caso não exista
+  const profileImageUrl = userData?.profileImageUrl || "/default-avatar.png";
+  
   return (
     <div className="container mx-auto p-4">
       <AuthProvider>
@@ -56,12 +61,23 @@ export default function UserPage() {
           <main className="flex-1">
             <div className="container space-y-6 py-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Coluna 1 e 2: Área de boas-vindas */}
-                <div className="md:col-span-2 space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tight">Olá, {displayName}!</h1>
-                  <p className="text-muted-foreground">
-                    Bem-vindo de volta! Acompanhe as últimas informações do seu dia.
-                  </p>
+                {/* Coluna 1 e 2: Área de boas-vindas com avatar ao lado da mensagem */}
+                <div className="md:col-span-2 flex items-center space-x-4">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
+                    <img
+                      src={profileImageUrl}
+                      alt="Avatar"
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                      Olá, {displayName}!
+                    </h1>
+                    <p className="text-muted-foreground">
+                      Bem-vindo de volta! Acompanhe as últimas informações do seu dia.
+                    </p>
+                  </div>
                 </div>
                 {/* Coluna 3: Card de emergência */}
                 <div className="flex items-center justify-center p-4 border border-red-500 rounded-lg">
@@ -101,7 +117,9 @@ export default function UserPage() {
               >
                 <div className="absolute inset-0 backdrop-blur-sm bg-[#1c1b22]/50 z-10"></div>
                 <div className="relative p-6 z-20">
-                  <h2 className="text-2xl font-bold text-white mb-4">Visão Geral da Moto</h2>
+                  <h2 className="text-2xl font-bold text-white mb-4">
+                    Visão Geral da Moto
+                  </h2>
                   <OverviewBike />
                 </div>
               </div>

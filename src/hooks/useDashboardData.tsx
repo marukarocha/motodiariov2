@@ -24,6 +24,7 @@ interface User {
   bloodType: string;
   emergencyPhone: string;
   role: string;
+  profileImageUrl?: string; // Propriedade adicionada para a URL do avatar
 }
 
 interface DashboardData {
@@ -61,6 +62,7 @@ export const useDashboardData = (): DashboardData => {
                 bloodType: userConfig.bloodType ? String(userConfig.bloodType) : "",
                 emergencyPhone: userConfig.emergencyPhone ? String(userConfig.emergencyPhone) : "",
                 role: userConfig.role ? String(userConfig.role) : "user",
+                profileImageUrl: userConfig.profileImageUrl ? String(userConfig.profileImageUrl) : "",
               },
             }));
           } else {

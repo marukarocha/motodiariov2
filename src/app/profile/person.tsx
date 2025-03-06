@@ -26,6 +26,9 @@ import { getUserProfile, updateUserProfile } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { IMaskInput } from "react-imask";
 
+// Importa a função de upload do Cloudinary
+import { uploadProfileImage as cloudinaryUploadProfileImage } from "@/lib/cloudinaryUpload";
+
 // Listas fixas para os dropdowns
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const licenseCategories = ["A", "B", "AB", "C", "D", "E"];
@@ -95,7 +98,12 @@ export default function Person() {
     defaultValues,
     mode: "onSubmit",
   });
-  const { handleSubmit, reset, control, formState: { errors } } = form;
+  const {
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = form;
 
   // Carrega os dados do perfil
   useEffect(() => {
@@ -138,11 +146,6 @@ export default function Person() {
     if (currentUser) fetchProfile();
   }, [currentUser, reset, toast]);
 
-  // Função de upload da imagem (placeholder)
-  async function uploadProfileImage(userId: string, file: File): Promise<string> {
-    return "https://via.placeholder.com/150";
-  }
-
   async function onSubmit(data: ProfileData) {
     setLoading(true);
     try {
@@ -168,7 +171,8 @@ export default function Person() {
       const { newPassword, ...profileData } = data;
 
       if (profileImage) {
-        const profileImageUrl = await uploadProfileImage(currentUser.uid, profileImage);
+        // Utiliza a função real para enviar a imagem para o Cloudinary
+        const profileImageUrl = await cloudinaryUploadProfileImage(profileImage);
         profileData.profileImageUrl = profileImageUrl;
       }
 
@@ -205,14 +209,25 @@ export default function Person() {
       <div className="flex flex-col items-center mb-6">
         <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
           {profileImagePreview ? (
-            <img src={profileImagePreview} alt="Profile" className="object-cover w-full h-full" />
+            <img
+              src={profileImagePreview}
+              alt="Profile"
+              className="object-cover w-full h-full"
+            />
           ) : (
-            <div className="flex items-center justify-center w-full h-full text-gray-500">Avatar</div>
+            <div className="flex items-center justify-center w-full h-full text-gray-500">
+              Avatar
+            </div>
           )}
         </div>
         <label className="mt-2 cursor-pointer text-blue-500 hover:underline">
           Alterar Imagem
-          <input type="file" accept="image/*" onChange={handleProfileImageChange} className="hidden" />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleProfileImageChange}
+            className="hidden"
+          />
         </label>
       </div>
 
@@ -225,9 +240,17 @@ export default function Person() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input placeholder="Nome" {...field} className={`text-sm ${errors.firstName ? "border-red-500" : ""}`} />
+                    <Input
+                      placeholder="Nome"
+                      {...field}
+                      className={`text-sm ${
+                        errors.firstName ? "border-red-500" : ""
+                      }`}
+                    />
                   </FormControl>
-                  {errors.firstName && <FormMessage>{errors.firstName.message}</FormMessage>}
+                  {errors.firstName && (
+                    <FormMessage>{errors.firstName.message}</FormMessage>
+                  )}
                 </FormItem>
               )}
             />
@@ -237,9 +260,17 @@ export default function Person() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input placeholder="Sobrenome" {...field} className={`text-sm ${errors.lastName ? "border-red-500" : ""}`} />
+                    <Input
+                      placeholder="Sobrenome"
+                      {...field}
+                      className={`text-sm ${
+                        errors.lastName ? "border-red-500" : ""
+                      }`}
+                    />
                   </FormControl>
-                  {errors.lastName && <FormMessage>{errors.lastName.message}</FormMessage>}
+                  {errors.lastName && (
+                    <FormMessage>{errors.lastName.message}</FormMessage>
+                  )}
                 </FormItem>
               )}
             />
@@ -250,9 +281,17 @@ export default function Person() {
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormControl>
-                      <Input placeholder="Apelido" {...field} className={`text-sm ${errors.nickname ? "border-red-500" : ""}`} />
+                      <Input
+                        placeholder="Apelido"
+                        {...field}
+                        className={`text-sm ${
+                          errors.nickname ? "border-red-500" : ""
+                        }`}
+                      />
                     </FormControl>
-                    {errors.nickname && <FormMessage>{errors.nickname.message}</FormMessage>}
+                    {errors.nickname && (
+                      <FormMessage>{errors.nickname.message}</FormMessage>
+                    )}
                   </FormItem>
                 )}
               />
@@ -262,7 +301,12 @@ export default function Person() {
                 render={({ field }) => (
                   <FormItem className="flex items-center">
                     <FormControl>
-                      <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} className="h-4 w-4" />
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        className="h-4 w-4"
+                      />
                     </FormControl>
                     <span className="ml-2 text-sm">Usar Apelido</span>
                   </FormItem>
@@ -280,10 +324,14 @@ export default function Person() {
                         placeholder="Telefone Principal"
                         value={field.value}
                         onChange={field.onChange}
-                        className={`w-full rounded-md border bg-transparent px-3 py-1 shadow-sm transition-colors ${errors.phone ? "border-red-500" : ""}`}
+                        className={`w-full rounded-md border bg-transparent px-3 py-1 shadow-sm transition-colors ${
+                          errors.phone ? "border-red-500" : ""
+                        }`}
                       />
                     </FormControl>
-                    {errors.phone && <FormMessage>{errors.phone.message}</FormMessage>}
+                    {errors.phone && (
+                      <FormMessage>{errors.phone.message}</FormMessage>
+                    )}
                   </FormItem>
                 )}
               />
@@ -297,10 +345,14 @@ export default function Person() {
                         placeholder="Telefone de Emergência"
                         value={field.value}
                         onChange={field.onChange}
-                        className={`w-full rounded-md border bg-transparent px-3 py-1 shadow-sm transition-colors ${errors.emergencyPhone ? "border-red-500" : ""}`}
+                        className={`w-full rounded-md border bg-transparent px-3 py-1 shadow-sm transition-colors ${
+                          errors.emergencyPhone ? "border-red-500" : ""
+                        }`}
                       />
                     </FormControl>
-                    {errors.emergencyPhone && <FormMessage>{errors.emergencyPhone.message}</FormMessage>}
+                    {errors.emergencyPhone && (
+                      <FormMessage>{errors.emergencyPhone.message}</FormMessage>
+                    )}
                   </FormItem>
                 )}
               />
@@ -311,9 +363,16 @@ export default function Person() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input placeholder="Email" disabled {...field} className="text-sm " />
+                    <Input
+                      placeholder="Email"
+                      disabled
+                      {...field}
+                      className="text-sm"
+                    />
                   </FormControl>
-                  {errors.email && <FormMessage>{errors.email.message}</FormMessage>}
+                  {errors.email && (
+                    <FormMessage>{errors.email.message}</FormMessage>
+                  )}
                 </FormItem>
               )}
             />
@@ -324,7 +383,11 @@ export default function Person() {
                 <FormItem>
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className={`text-sm bg-[#1c1b22] ${errors.bloodType ? "border-red-500" : ""}`}>
+                      <SelectTrigger
+                        className={`text-sm bg-[#1c1b22] ${
+                          errors.bloodType ? "border-red-500" : ""
+                        }`}
+                      >
                         <SelectValue placeholder="Tipo Sanguíneo" />
                       </SelectTrigger>
                       <SelectContent className="bg-[#1c1b22]">
@@ -336,7 +399,9 @@ export default function Person() {
                       </SelectContent>
                     </Select>
                   </FormControl>
-                  {errors.bloodType && <FormMessage>{errors.bloodType.message}</FormMessage>}
+                  {errors.bloodType && (
+                    <FormMessage>{errors.bloodType.message}</FormMessage>
+                  )}
                 </FormItem>
               )}
             />
@@ -347,7 +412,11 @@ export default function Person() {
                 <FormItem>
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className={`text-sm bg-[#1c1b22] ${errors.licenseCategory ? "border-red-500" : ""}`}>
+                      <SelectTrigger
+                        className={`text-sm bg-[#1c1b22] ${
+                          errors.licenseCategory ? "border-red-500" : ""
+                        }`}
+                      >
                         <SelectValue placeholder="Categoria Habilitação" />
                       </SelectTrigger>
                       <SelectContent className="bg-[#1c1b22]">
@@ -359,7 +428,9 @@ export default function Person() {
                       </SelectContent>
                     </Select>
                   </FormControl>
-                  {errors.licenseCategory && <FormMessage>{errors.licenseCategory.message}</FormMessage>}
+                  {errors.licenseCategory && (
+                    <FormMessage>{errors.licenseCategory.message}</FormMessage>
+                  )}
                 </FormItem>
               )}
             />
@@ -369,9 +440,18 @@ export default function Person() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input type="number" placeholder="Ano de Nascimento" {...field} className={`text-sm ${errors.birthYear ? "border-red-500" : ""}`} />
+                    <Input
+                      type="number"
+                      placeholder="Ano de Nascimento"
+                      {...field}
+                      className={`text-sm ${
+                        errors.birthYear ? "border-red-500" : ""
+                      }`}
+                    />
                   </FormControl>
-                  {errors.birthYear && <FormMessage>{errors.birthYear.message}</FormMessage>}
+                  {errors.birthYear && (
+                    <FormMessage>{errors.birthYear.message}</FormMessage>
+                  )}
                 </FormItem>
               )}
             />
@@ -384,15 +464,28 @@ export default function Person() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input type="password" placeholder="Nova Senha (opcional)" {...field} className={`text-sm ${errors.newPassword ? "border-red-500" : ""}`} />
+                    <Input
+                      type="password"
+                      placeholder="Nova Senha (opcional)"
+                      {...field}
+                      className={`text-sm ${
+                        errors.newPassword ? "border-red-500" : ""
+                      }`}
+                    />
                   </FormControl>
-                  {errors.newPassword && <FormMessage>{errors.newPassword.message}</FormMessage>}
+                  {errors.newPassword && (
+                    <FormMessage>{errors.newPassword.message}</FormMessage>
+                  )}
                 </FormItem>
               )}
             />
           </div>
 
-          <Button type="submit" disabled={loading} className="bg-green-500 hover:bg-green-600 mt-6 w-full">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="bg-green-500 hover:bg-green-600 mt-6 w-full"
+          >
             {loading ? "Salvando..." : "Salvar Perfil"}
           </Button>
         </form>

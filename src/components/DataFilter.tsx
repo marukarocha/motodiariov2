@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
-// NÃO importe o CSS customizado aqui (ele já está no globals.css)
 import "react-day-picker/dist/style.css";
 import "@/styles/custom-daypicker.css";
+
 interface DateFilterProps {
   onDateSelected: (startDate: Date | null, endDate: Date | null) => void;
 }
@@ -31,20 +31,18 @@ export function DateFilter({ onDateSelected }: DateFilterProps) {
   const handleLast7Days = () => {
     const today = new Date();
     const start = subDays(today, 6);
-    onDateSelected(start, today);
+    onDateSelected(startOfDay(start), endOfDay(today));
   };
 
   const handleLast15Days = () => {
     const today = new Date();
     const start = subDays(today, 14);
-    onDateSelected(start, today);
+    onDateSelected(startOfDay(start), endOfDay(today));
   };
 
   const handleThisMonth = () => {
     const today = new Date();
-    const start = startOfMonth(today);
-    const end = endOfMonth(today);
-    onDateSelected(start, end);
+    onDateSelected(startOfMonth(today), endOfMonth(today));
   };
 
   return (

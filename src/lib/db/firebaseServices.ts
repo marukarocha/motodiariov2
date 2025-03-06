@@ -56,15 +56,31 @@ export async function addEarning(userId: string, earning: Record<string, unknown
   await addDoc(earningsRef, earning);
 }
 
+// Função para obter os ganhos de um usuário com filtro de datas// Função para obter os ganhos de um usuário com filtro de datas
 // Função para obter os ganhos de um usuário com filtro de datas
-export async function getEarnings(userId: string, startDate: Date | null = null, endDate: Date | null = null): Promise<Earning[]> {
+export async function getEarnings(
+  userId: string,
+  startDate?: Date | null,
+  endDate?: Date | null
+): Promise<Earning[]> {
   try {
-    let earningsRef = collection(db, "users", userId, "earnings");
+    const earningsRef = collection(db, "users", userId, "earnings");
     let q;
 
-    if (startDate && endDate) {
-      const startTimestamp = Timestamp.fromDate(startDate);
-      const endTimestamp = Timestamp.fromDate(endDate);
+    if (startDate != null && endDate != null) {
+      console.log(
+        `🔎 Filtrando ganhos entre ${startDate} e ${endDate}`
+      );
+
+      // Cria cópias das datas para não modificar os objetos originais
+      const start = new Date(startDate.getTime());
+      start.setHours(0, 0, 0, 0);
+      const startTimestamp = Timestamp.fromDate(start);
+
+      const end = new Date(endDate.getTime());
+      end.setHours(23, 59, 59, 999);
+      const endTimestamp = Timestamp.fromDate(end);
+
       q = query(
         earningsRef,
         where("date", ">=", startTimestamp),
@@ -77,21 +93,72 @@ export async function getEarnings(userId: string, startDate: Date | null = null,
 
     const querySnapshot = await getDocs(q);
     const earnings: Earning[] = [];
+
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
       earnings.push({
         id: docSnap.id,
         ...data,
-        date: (data.date as Timestamp).toDate(),
+        date: (data.date as Timestamp).toDate(), // Converte Timestamp para Date
       } as Earning);
     });
 
+    console.log("📊 Ganhos filtrados retornados do Firestore:", earnings);
     return earnings;
   } catch (error) {
-    console.error("Erro ao obter ganhos:", error);
+    console.error("❌ Erro ao obter ganhos:", error);
     throw error;
   }
 }
+
+// Função para calcular as horas totais dentro de um intervalo de datas
+export async function calculateTotalHours(
+  userId: string,
+  startDate?: Date | null,
+  endDate?: Date | null
+): Promise<number> {
+  try {
+    const earningsRef = collection(db, "users", userId, "earnings");
+    let q;
+
+    if (startDate != null && endDate != null) {
+      // Cria cópias das datas para não alterar os objetos originais
+      const start = new Date(startDate.getTime());
+      start.setHours(0, 0, 0, 0);
+      const startTimestamp = Timestamp.fromDate(start);
+
+      const end = new Date(endDate.getTime());
+      end.setHours(23, 59, 59, 999);
+      const endTimestamp = Timestamp.fromDate(end);
+
+      q = query(
+        earningsRef,
+        where("date", ">=", startTimestamp),
+        where("date", "<=", endTimestamp),
+        orderBy("date", "desc")
+      );
+    } else {
+      q = query(earningsRef, orderBy("date", "desc"));
+    }
+
+    const querySnapshot = await getDocs(q);
+    let totalHours = 0;
+
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.hours) {
+        totalHours += Number(data.hours);
+      }
+    });
+
+    console.log(`✅ Total de horas trabalhadas no período: ${totalHours}`);
+    return totalHours;
+  } catch (error) {
+    console.error("Erro ao calcular total de horas:", error);
+    return 0;
+  }
+}
+
 // 📌 Atualiza um registro de ganho no Firestore
 export async function updateEarning(userId: string, earningId: string, updatedData: Partial<Earning>) {
   try {
@@ -344,6 +411,7 @@ export async function getUserProfile(userId: string): Promise<Record<string, unk
     const userRef = doc(db, "users", userId);
     const profileRef = doc(userRef, "configurations", "user");
     const docSnap = await getDoc(profileRef);
+    console.log("Document snapshot in getUserProfile:", docSnap.data());
     if (docSnap.exists()) {
       return docSnap.data();
     } else {
@@ -367,6 +435,11 @@ export async function updateUserProfile(userId: string, data: Record<string, unk
   }
 }
 
+
+/* =======================
+   FUNÇÃO Calculo de horas 
+   ======================= */
+// Função para calcular as horas totais dentro de um intervalo de datas
 
 /* =======================
    FUNÇÃO PARA LOGOUT

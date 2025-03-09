@@ -252,7 +252,7 @@ const Step1 = ({ formValues, setFormValues, setInputFocused, platformOptions, al
   }
   return (
     <div
-      className="p-2 space-y-0"
+      className="p-2 space-y-6"
       onFocusCapture={() => setInputFocused(true)}
       onBlurCapture={() => setInputFocused(false)}
     >

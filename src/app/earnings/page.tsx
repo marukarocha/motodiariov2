@@ -8,7 +8,7 @@ import { DateFilter } from "@/components/DataFilter";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { DataTableEarnings, Earning } from "@/app/earnings/components/EarningsTable";
-import { PlatformBarChart, DailyHoursLineChart } from "@/app/earnings/components/EarningsCharts";
+import { PlatformBarChart, DailyHoursLineChart,PlatformStackedBarChart } from "@/app/earnings/components/EarningsCharts";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { getEarnings } from "@/lib/db/firebaseServices";
@@ -73,11 +73,12 @@ export default function EarningsPage() {
         endDate={endDate}
       />
 
-      <Card className="mt-6">
+      <Card className="mt-6 border-0">
         {showCharts && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid border-0 grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <PlatformBarChart earningsData={earningsData} />
             <DailyHoursLineChart earningsData={earningsData} />
+            <PlatformStackedBarChart earningsData={earningsData} />
           </div>
         )}
       </Card>

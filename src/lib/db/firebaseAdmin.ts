@@ -1,7 +1,22 @@
 // @/lib/db/firebaseAdmin.ts
 import admin from "firebase-admin";
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK || "{}");
+let serviceAccountStr = process.env.FIREBASE_ADMIN_SDK || "{}";
+
+// Se a string estiver entre aspas simples ou duplas, remova-as.
+if (
+  (serviceAccountStr.startsWith('"') && serviceAccountStr.endsWith('"')) ||
+  (serviceAccountStr.startsWith("'") && serviceAccountStr.endsWith("'"))
+) {
+  serviceAccountStr = serviceAccountStr.slice(1, -1);
+}
+
+const serviceAccount = JSON.parse(serviceAccountStr);
+
+// Corrige as quebras de linha na private_key, se existir
+if (serviceAccount.private_key) {
+  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+}
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -13,5 +28,4 @@ if (!admin.apps.length) {
 const adminAuth = admin.auth();
 const adminDb = admin.firestore();
 
-// Exporta também o objeto "admin" para acessar propriedades estáticas, como FieldValue.
 export { admin, adminAuth, adminDb };

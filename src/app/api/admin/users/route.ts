@@ -2,9 +2,16 @@
 import { NextResponse } from "next/server";
 import admin from "firebase-admin";
 
+const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK || "{}");
+
+// Corrige as quebras de linha na chave privada
+if (serviceAccount.private_key) {
+  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+}
+
 if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_ADMIN_SDK || "{}")),
+    credential: admin.credential.cert(serviceAccount),
     databaseURL: process.env.FIREBASE_DATABASE_URL,
   });
 }
@@ -15,12 +22,10 @@ export async function GET() {
 
     const users: any[] = [];
 
-    // Para cada doc em /users, buscamos os subdocumentos em /users/{userId}/configurations
     for (const docSnap of usersSnapshot.docs) {
       const userId = docSnap.id;
-      const userDocData = docSnap.data(); // Dados do doc principal (se houver)
+      const userDocData = docSnap.data();
 
-      // 1) Buscar dados do subdoc "user"
       const userConfigRef = admin
         .firestore()
         .collection("users")
@@ -34,7 +39,6 @@ export async function GET() {
         userConfigData = userConfigSnap.data() || {};
       }
 
-      // 2) Buscar dados do subdoc "bike"
       const bikeConfigRef = admin
         .firestore()
         .collection("users")
@@ -48,14 +52,10 @@ export async function GET() {
         bikeConfigData = bikeConfigSnap.data() || {};
       }
 
-      // Montar objeto final
       users.push({
         id: userId,
-        // Dados do doc principal (se existir)
         ...userDocData,
-        // Dados do subdocumento user
         ...userConfigData,
-        // Dados do subdocumento bike, agrupados em um campo "bike"
         bike: bikeConfigData,
       });
     }

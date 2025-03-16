@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowUpDown,
-  ChevronDown,
   Trash,
   Check,
   Pencil,
@@ -33,10 +32,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Desempenho from "@/app/earnings/components/desempenho";
-import { deleteEarning, updateEarning } from "@/lib/db/firebaseServices";
+import { updateEarning } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useLongPress, useOutsideClick } from "@/hooks/useLongPress";
+import { useDeleteEarning } from "@/hooks/useDeleteEarning";
 
 export type Earning = {
   id: string;
@@ -56,6 +56,7 @@ interface DataTableEarningsProps {
 export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const { deleteEarningAndOdometer } = useDeleteEarning();
 
   // Estados do Tanstack React Table
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -68,7 +69,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
   const [editingRowData, setEditingRowData] = React.useState<Partial<Earning> | null>(null);
   const [originalEditingRowData, setOriginalEditingRowData] = React.useState<Partial<Earning> | null>(null);
 
-  // Para dar feedback visual
+  // Feedback visual
   const [recentlyUpdatedRowId, setRecentlyUpdatedRowId] = React.useState<string | null>(null);
 
   // Opções pré-definidas
@@ -76,17 +77,15 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
   const rideTypeOptions = ["Passageiro", "Entrega", "Compras", "Comida"];
   const durationOptions = ["15 min", "30 min", "45 min", "1 hora", "1h 30min", "2 horas", "3 horas ou mais"];
 
-  // 1) Crie um ref para a linha em edição
+  // Ref para a linha em edição
   const editRowRef = useRef<HTMLTableRowElement | null>(null);
-
-  // 2) Use o hook useOutsideClick para fechar edição se clicar fora da row
   useOutsideClick(editRowRef, () => {
     if (editingRowId) {
       handleCancelEdit();
     }
   });
 
-  // ---- Lógica de edição ----
+  // Lógica de edição
   const handleEdit = (earning: Earning) => {
     setEditingRowId(earning.id);
     const dateISO =
@@ -113,7 +112,6 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
     }
     let updatedData: Partial<Earning> = { ...editingRowData };
 
-    // Se data não mudou, removemos do update
     if (
       editingRowData?.date &&
       originalEditingRowData &&
@@ -144,7 +142,8 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
     }
   };
 
-  const handleDelete = async (earningId: string) => {
+  // Exclusão: utiliza o hook useDeleteEarning para apagar earning e registros odômetro associados.
+  const handleDelete = async (earningId: string, earningDate?: Date) => {
     if (!currentUser) {
       alert("Usuário não autenticado!");
       return;
@@ -152,14 +151,22 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
     const confirmed = window.confirm("Confirma a exclusão? Essa ação não tem volta.");
     if (!confirmed) return;
     try {
-      await deleteEarning(currentUser.uid, earningId);
+      // Se o earning tiver uma data, converta para Date para passar ao hook.
+      let dateObj: Date | undefined = undefined;
+      if (data.find((e) => e.id === earningId)?.date) {
+        const d = data.find((e) => e.id === earningId)?.date;
+        dateObj = d && d.seconds ? new Date(d.seconds * 1000) : new Date(d);
+      }
+      await deleteEarningAndOdometer(earningId, dateObj);
       onRefresh();
+      toast({ title: "Excluído", description: "Registro removido com sucesso." });
     } catch (error) {
       console.error("Erro ao deletar:", error);
+      toast({ title: "Erro", description: "Erro ao deletar registro.", variant: "destructive" });
     }
   };
 
-  // ---- Definição das colunas ----
+  // Definição das colunas
   const columns = React.useMemo<ColumnDef<Earning>[]>(
     () => [
       {
@@ -335,9 +342,9 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
           }
           return (
             <Desempenho
-              amount={earning.amount}
-              mileage={earning.mileage}
-              duration={earning.duration}
+              amount={row.original.amount}
+              mileage={row.original.mileage}
+              duration={row.original.duration}
             />
           );
         },
@@ -368,7 +375,11 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
               <Button variant="ghost" onClick={() => handleEdit(earning)} title="Editar">
                 <Pencil className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" onClick={() => handleDelete(earning.id)} title="Deletar">
+              <Button variant="ghost" onClick={() => handleDelete(earning.id, (() => {
+                // Converter earning.date para Date, se disponível
+                const d = earning.date;
+                return d && d.seconds ? new Date(d.seconds * 1000) : new Date(d);
+              })())} title="Deletar">
                 <Trash className="h-4 w-4 text-destructive" />
               </Button>
             </div>
@@ -376,16 +387,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
         },
       },
     ],
-    [
-      editingRowId,
-      editingRowData,
-      currentUser,
-      onRefresh,
-      originalEditingRowData,
-      platformOptions,
-      rideTypeOptions,
-      durationOptions,
-    ]
+    [editingRowId, editingRowData, currentUser, platformOptions, rideTypeOptions, durationOptions, data]
   );
 
   const table = useReactTable({
@@ -408,16 +410,15 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  // Hook para detectar toque prolongado e ativar edição (para mobile)
-  // Aplica-se nos <TableRow> que não estejam em edição
   return (
     <div className="w-full">
-      {/* Filtro por plataforma */}
       <div className="flex items-center py-4">
         <Input
           placeholder="Filtrar pela plataforma..."
           value={(table.getColumn("platform")?.getFilterValue() as string) ?? ""}
-          onChange={(event) => table.getColumn("platform")?.setFilterValue(event.target.value)}
+          onChange={(event) =>
+            table.getColumn("platform")?.setFilterValue(event.target.value)
+          }
           className="max-w-sm"
         />
         <div className="flex items-center space-x-2 ml-6">
@@ -440,15 +441,7 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow
-                key={headerGroup.id}
-                className={
-                  recentlyUpdatedRowId &&
-                  headerGroup.headers.some((h) => h.column.id === recentlyUpdatedRowId)
-                    ? "bg-green-500/50 transition-colors duration-1000"
-                    : ""
-                }
-              >
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder
@@ -462,32 +455,23 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
 
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => {
-                const isEditingThisRow = editingRowId === row.original.id;
-                const longPressEvents = useLongPress(() => {
-                  // Só entra em edição se não estiver editando outra row
-                  if (!editingRowId) handleEdit(row.original);
-                }, 500);
-
-                return (
-                  <TableRow
-                    key={row.id}
-                    // Se for a row em edição, atribui o ref
-                    ref={isEditingThisRow ? editRowRef : null}
-                    className="hover:bg-stone-950 active:bg-stone-950 transition-colors"
-                    onDoubleClick={() => {
-                      if (!editingRowId) handleEdit(row.original);
-                    }}
-                    {...(!isEditingThisRow ? longPressEvents : {})}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  ref={editingRowId === row.original.id ? editRowRef : null}
+                  className="hover:bg-stone-950 active:bg-stone-950 transition-colors"
+                  onDoubleClick={() => {
+                    if (!editingRowId) handleEdit(row.original);
+                  }}
+                  {...(!editingRowId ? useLongPress(() => { if (!editingRowId) handleEdit(row.original); }, 500) : {})}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
@@ -499,7 +483,6 @@ export function DataTableEarnings({ data, onRefresh }: DataTableEarningsProps) {
         </Table>
       </div>
 
-      {/* Paginação */}
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} de{" "}

@@ -154,6 +154,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       litros: litrosNumber,
       posto: postoName,
       valorLitro: valorLitroNumber,
+      currentMileage: odometerNumber, // novo campo para registrar a leitura do odômetro no abastecimento
     };
 
     try {

@@ -11,6 +11,7 @@ import { BikeCard } from "@/app/bike/components/BikeCard";
 import { OverviewBike } from "@/app/bike/components/OverviewBike";
 import WelcomeModal from "@/components/WelcomeModal";
 import { Heart } from "lucide-react";
+import OdometerUpdateButton from "@/app/odometer/OdometerUpdateButton";
 
 export default function UserPage() {
   const { userData, earnings, error, loading } = useDashboardData();
@@ -129,6 +130,7 @@ export default function UserPage() {
                   Você tem um total de {earnings?.length || 0} ganhos.
                 </p>
                 <RegisterEarningButton onEarningAdded={() => {}} />
+                <OdometerUpdateButton />
               </div>
               <Motivation className="mt-8" />
             </div>

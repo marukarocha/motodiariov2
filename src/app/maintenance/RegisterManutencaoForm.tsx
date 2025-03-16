@@ -7,16 +7,26 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { GiWrench } from "react-icons/gi"; // ícone para manutenção
-import { Checkbox } from "@/components/ui/checkbox"; // componente checkbox
+import { GiWrench } from "react-icons/gi";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+
+interface MaintenanceOption {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+  fields: Array<{ name: string; type: string; label: string }>;
+  maintenanceInterval: number;
+}
 
 interface RegisterManutencaoFormProps {
   maintenanceType: string;
+  maintenanceOption: MaintenanceOption;
   onClose: () => void;
 }
 
-export default function RegisterManutencaoForm({ maintenanceType, onClose }: RegisterManutencaoFormProps) {
+export default function RegisterManutencaoForm({ maintenanceType, maintenanceOption, onClose }: RegisterManutencaoFormProps) {
   const { currentUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -32,7 +42,7 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
   const [dataManual, setDataManual] = useState("");
   const [horaManual, setHoraManual] = useState("");
 
-  // Função para obter o timestamp: se custom, usa os valores informados; senão, usa a data/hora atual.
+  // Função para obter o timestamp: se custom, usa os valores informados; senão, usa o timestamp atual.
   const getTimestamp = (): Date => {
     if (useCustomDateTime && dataManual && horaManual) {
       return new Date(`${dataManual}T${horaManual}:00`);
@@ -64,13 +74,12 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
       return;
     }
 
-    // Obtem o timestamp definido (customizado ou do servidor)
     const timestamp = getTimestamp();
 
     // Monta objeto de manutenção usando o timestamp completo
     const manutencao = {
-      tipo: maintenanceType,
-      timestamp,  // timestamp completo
+      tipo: maintenanceOption.label, // ou use maintenanceOption.id se preferir
+      timestamp,
       km: kmNumber,
       valor: valorNumber,
       local,
@@ -78,13 +87,13 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
     };
 
     try {
-      // Registra a manutenção. Supondo que addMaintenance retorne o ID da manutenção.
+      // Registra a manutenção; supondo que addMaintenance retorne o ID
       const maintenanceId = await addMaintenance(currentUser!.uid, manutencao);
 
-      // Registra o odômetro com o mesmo timestamp customizado
+      // Registra o odômetro com o mesmo timestamp
       await addOdometerRecord(currentUser!.uid, {
         currentMileage: kmNumber,
-        note: `Manutenção (${maintenanceType}): ${maintenanceId}`,
+        note: `Manutenção (${maintenanceOption.label}): ${maintenanceId}`,
         source: "maintenance",
         sourceId: maintenanceId,
         recordedAt: timestamp,
@@ -92,7 +101,7 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
 
       toast({
         title: "Sucesso",
-        description: `${maintenanceType} registrada com sucesso!`,
+        description: `${maintenanceOption.label} registrada com sucesso!`,
         variant: "success",
       });
       onClose();
@@ -111,7 +120,7 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
     <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 p-4">
       <div className="col-span-2 flex items-center gap-2">
         <GiWrench size={32} className="text-primary" />
-        <h2 className="text-xl font-semibold">{maintenanceType}</h2>
+        <h2 className="text-xl font-semibold">{maintenanceOption.label}</h2>
       </div>
       
       {/* Coluna 1 */}
@@ -194,7 +203,6 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
         </div>
       )}
 
-      {/* Se não for manual, exibe o timestamp atual */}
       {!useCustomDateTime && (
         <div className="col-span-2">
           <p className="text-sm">
@@ -205,7 +213,7 @@ export default function RegisterManutencaoForm({ maintenanceType, onClose }: Reg
 
       <div className="col-span-2">
         <Button type="submit" className="bg-green-500 w-full">
-          Registrar {maintenanceType}
+          Registrar {maintenanceOption.label}
         </Button>
       </div>
     </form>

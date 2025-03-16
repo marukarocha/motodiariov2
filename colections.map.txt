@@ -1,0 +1,9 @@
+Users -  abastecimentos - combustivel, data, hora, litros,posto,valorLitro 
+Users - configurations - bike (averangeConsumption,color,initialMileage,lastMaintenance,lubricationKm,make,model,oilChangeInterval,oilChangeKm,plate,relationChangeKm,tankVolume,year 
+ , earnings,user)
+ Users - configurations - earnings ( dailHours,fixedCosts)
+ Users - configurations - user ( birthYear,bloodType,email,emergencyPhone,firstName,lastName,licenseCategory,nickname,phone,preferredPlatforms,profileImageUrl)
+
+ users - earnings (amount, date, description,duration,mileage,platform,rideType,tip)
+
+ users - manutencoes ( data,hora,km,local,observacoes,tipo,valor)

@@ -1,19 +1,46 @@
-// src/lib/maintenanceCalculator.ts
-export interface MaintenanceConfig {
-    oilChangeInterval: number; // Ex: 1500 km
-    initialMileage: number;    // Km inicial da moto
+export interface MaintenanceStatus {
+  text: string;
+  color: string;
+}
+
+/**
+ * Calcula o status da manutenção com base na quilometragem.
+ * @param lastMileage Última quilometragem registrada
+ * @param nextMaintenance Quilometragem prevista para a próxima manutenção
+ * @param threshold Margem para aviso (padrão: 500 km)
+ * @returns Status da manutenção (texto e cor)
+ */
+export function calculateMaintenanceStatus(lastMileage: number, nextMaintenance: number, threshold = 500) {
+  const diff = nextMaintenance - lastMileage;
+
+  if (diff === 0) {
+    return { text: "Dentro do prazo", color: "green" }; // ✅ Corrigido: Agora não mostra "Atrasado"
+  } else if (diff < 0) {
+    return { text: `Atrasado ${Math.abs(diff)} km`, color: "red" };
+  } else if (diff <= threshold) {
+    return { text: `Próximo em ${diff} km`, color: "orange" };
+  } else {
+    return { text: "Dentro do prazo", color: "green" };
   }
-  
-  export function calculateNextOilChange(currentMileage: number, config: MaintenanceConfig): number {
-    // Calcula o próximo ciclo de manutenção baseado no intervalo
-    const cycles = Math.floor((currentMileage - config.initialMileage) / config.oilChangeInterval) + 1;
-    return config.initialMileage + cycles * config.oilChangeInterval;
+}
+
+
+/**
+ * Atualiza a manutenção anterior como "finalizada" ao registrar uma nova.
+ * @param maintenanceList Lista de manutenções existentes
+ * @param type Tipo da nova manutenção registrada
+ * @param updateFunction Função de atualização da manutenção
+ */
+export async function finalizePreviousMaintenance(
+  maintenanceList: any[],
+  type: string,
+  updateFunction: (id: string, data: Partial<any>) => Promise<void>
+) {
+  const lastMaintenance = maintenanceList
+    .filter((m) => m.tipo.toLowerCase() === type.toLowerCase())
+    .sort((a, b) => b.km - a.km)[0];
+
+  if (lastMaintenance && !lastMaintenance.finalizado) {
+    await updateFunction(lastMaintenance.id, { finalizado: true });
   }
-  
-  // Exemplo de uso:
-  // Se a moto foi registrada com 10.000 km e o intervalo é 1500 km,
-  // e o usuário já rodou 11.200 km, então:
-  const config: MaintenanceConfig = { oilChangeInterval: 1500, initialMileage: 10000 };
-  const nextChange = calculateNextOilChange(11200, config);
-  // nextChange seria 11500 (ou 11500 km)
-  
+}

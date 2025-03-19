@@ -4,13 +4,14 @@ import React from "react";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
+  CartesianGrid,
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
-  CartesianGrid,
+  ReferenceLine,
   Legend,
 } from "recharts";
 import {
@@ -81,18 +82,19 @@ export function PlatformBarChart({ earningsData }: { earningsData: any[] }) {
 // GRÁFICO 2: DailyHoursLineChart
 // ====================
 
+// Mapeamento para converter a string de duração em minutos
+const durationMapping: Record<string, number> = {
+  "15 min": 15,
+  "30 min": 30,
+  "45 min": 45,
+  "1 hora": 60,
+  "1h 30min": 90,
+  "2 horas": 120,
+  "3 horas ou mais": 180,
+};
+
 // Agrupa as horas trabalhadas por dia
 export function groupHoursByDay(earningsData: any[]) {
-  const durationMapping: Record<string, number> = {
-    "15 min": 15,
-    "30 min": 30,
-    "45 min": 45,
-    "1 hora": 60,
-    "1h 30min": 90,
-    "2 horas": 120,
-    "3 horas ou mais": 180,
-  };
-
   const groups: Record<string, { day: string; totalMinutes: number }> = {};
   earningsData.forEach((earning) => {
     let minutes = 0;
@@ -112,7 +114,6 @@ export function groupHoursByDay(earningsData: any[]) {
       if (d) {
         const dayStr = String(d.getDate()).padStart(2, "0");
         const monthStr = String(d.getMonth() + 1).padStart(2, "0");
-        // Formata no formato "DD/MM" (sem o ano)
         day = `${dayStr}/${monthStr}`;
       }
     }
@@ -137,11 +138,23 @@ function formatHours(totalHours: number): string {
 export function DailyHoursLineChart({ earningsData }: { earningsData: any[] }) {
   const data = groupHoursByDay(earningsData);
   data.sort((a, b) => (a.day > b.day ? 1 : -1));
+
+  // Cálculo da média das horas trabalhadas
+  const avgHours =
+    data.reduce((acc, curr) => acc + curr.totalHours, 0) / data.length;
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Horas Trabalhadas por Dia</CardTitle>
-        <CardDescription>Total de horas agregadas por dia</CardDescription>
+      <CardHeader className="grid grid-cols-2 gap-4">
+        <div>
+          <CardTitle>Horas Trabalhadas por Dia</CardTitle>
+          <CardDescription>Total de horas agregadas por dia</CardDescription>
+        </div>
+        <div className="flex flex-col items-end justify-center">
+          <span className="text-lg font-bold">
+            Média: {formatHours(avgHours)}
+          </span>
+        </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -155,12 +168,25 @@ export function DailyHoursLineChart({ earningsData }: { earningsData: any[] }) {
               label={{ value: "Horas", angle: -90, position: "insideLeft" }}
             />
             <RechartsTooltip content={<CustomTooltip />} />
+            {/* Linha do gráfico de horas */}
             <Line
               type="monotone"
               dataKey="totalHours"
               stroke="var(--color-primary)"
               strokeWidth={2}
               dot={{ r: 3 }}
+            />
+            {/* Linha de referência para a média com traço contínuo e espessura maior */}
+            <ReferenceLine
+              y={avgHours}
+              stroke="red"
+              strokeWidth={3}
+              label={{
+                value: `Média: ${formatHours(avgHours)}`,
+                position: "right",
+                fill: "red",
+                fontSize: 14,
+              }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -211,8 +237,9 @@ export function groupByPlatformAndRideType(earningsData: any[]) {
     if (!groups[platform]) {
       groups[platform] = { platformName: platform };
     }
-    // Converte rideType para string, remove espaços extras e usa "Indefinido" se ausente
-    const rideType = earning.rideType ? String(earning.rideType).trim() : "Indefinido";
+    const rideType = earning.rideType
+      ? String(earning.rideType).trim()
+      : "Indefinido";
     groups[platform][rideType] = ((groups[platform][rideType] as number) || 0) + 1;
   });
   return Object.values(groups);
@@ -252,7 +279,7 @@ function getColor(index: number): string {
 export function PlatformStackedBarChart({ earningsData }: { earningsData: any[] }) {
   const data = groupByPlatformAndRideType(earningsData);
   
-  // Ordena os dados com base no total de corridas (soma dos ride types) de forma crescente
+  // Ordena os dados com base no total de corridas (soma dos ride types)
   data.sort((a, b) => {
     const totalA = Object.keys(a).reduce(
       (acc, key) => (key !== "platformName" ? acc + Number(a[key]) : acc),

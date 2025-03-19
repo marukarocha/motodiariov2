@@ -17,32 +17,26 @@ import { Input } from "@/components/ui/input";
 import { NumericFormat } from "react-number-format";
 import { useToast } from "@/hooks/use-toast";
 import { User, MapPin, DollarSign, ClipboardList } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Valores pré-definidos
-const preDefinedMileage = [1, 5, 10, 20, 30];
+const preDefinedMileage = [1, 5, 10, 15, 20, 30];
 const preDefinedHours = [0, 1, 2, 3, 4, 5];
-const preDefinedMinutes = [0, 15, 30, 45];
-const preDefinedAmounts = [5, 10, 20, 50];
+const preDefinedMinutes = [0, 15, 25, 30, 45];
+const preDefinedAmounts = [5, 10, 15, 20, 50];
 const preDefinedCentavos = [0, 25, 50, 75, 99];
 
 //
-// COMPONENTES AUXILIARES
+// COMPONENTES AUXILIARES (Mantêm a implementação original dos Selectors)
 //
 
-// Quilometragem – NumericFormat com inputs maiores
 const MileageSelector = ({ value, onChange }) => {
   const increment = () => onChange(Number(value) + 1);
-  const decrement = () =>
-    onChange(Number(value) > 0 ? Number(value) - 1 : 0);
+  const decrement = () => onChange(Number(value) > 0 ? Number(value) - 1 : 0);
   return (
     <div className="flex flex-col items-center space-y-2">
       <div className="flex items-center gap-4 w-full justify-center">
-        <Button
-          onClick={decrement}
-          className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70"
-        >
-          –
-        </Button>
+        <Button onClick={decrement} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">–</Button>
         <NumericFormat
           value={value}
           onValueChange={({ floatValue }) => onChange(floatValue || 0)}
@@ -55,21 +49,11 @@ const MileageSelector = ({ value, onChange }) => {
           customInput={Input}
           className="w-48 text-center text-2xl bg-transparent"
         />
-        <Button
-          onClick={increment}
-          className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70"
-        >
-          +
-        </Button>
+        <Button onClick={increment} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">+</Button>
       </div>
       <div className="flex flex-wrap gap-2 justify-center">
         {preDefinedMileage.map((km) => (
-          <Button
-            key={km}
-            variant={Number(value) === km ? "default" : "outline"}
-            onClick={() => onChange(km)}
-            className="py-1 px-2 text-sm h-8"
-          >
+          <Button key={km} variant={Number(value) === km ? "default" : "outline"} onClick={() => onChange(km)} className="py-1 px-2 text-sm h-8">
             {km} km
           </Button>
         ))}
@@ -78,24 +62,16 @@ const MileageSelector = ({ value, onChange }) => {
   );
 };
 
-// Tempo – inputs para Horas e Minutos com botões laterais
 const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
-  const increment = (val, setter, max = Infinity) =>
-    setter(val < max ? val + 1 : val);
+  const increment = (val, setter, max = Infinity) => setter(val < max ? val + 1 : val);
   const decrement = (val, setter) => setter(val > 0 ? val - 1 : 0);
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-        {/* Seção Horas */}
         <div className="flex flex-col items-center">
           <Label className="mb-1 text-sm font-semibold">Horas</Label>
           <div className="flex items-center gap-4 w-full justify-center">
-            <Button
-              onClick={() => decrement(hours, onChangeHours)}
-              className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70"
-            >
-              –
-            </Button>
+            <Button onClick={() => decrement(hours, onChangeHours)} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">–</Button>
             <Input
               type="number"
               value={hours}
@@ -103,36 +79,20 @@ const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
               className="w-48 text-center text-2xl bg-transparent"
               style={{ MozAppearance: "textfield" }}
             />
-            <Button
-              onClick={() => increment(hours, onChangeHours)}
-              className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70"
-            >
-              +
-            </Button>
+            <Button onClick={() => increment(hours, onChangeHours)} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">+</Button>
           </div>
           <div className="flex flex-wrap gap-2 justify-center mt-2">
             {preDefinedHours.map((hr) => (
-              <Button
-                key={hr}
-                variant={hours === hr ? "default" : "outline"}
-                onClick={() => onChangeHours(hr)}
-                className="py-1 px-2 text-sm h-8"
-              >
+              <Button key={hr} variant={hours === hr ? "default" : "outline"} onClick={() => onChangeHours(hr)} className="py-1 px-2 text-sm h-8">
                 {hr}h
               </Button>
             ))}
           </div>
         </div>
-        {/* Seção Minutos */}
         <div className="flex flex-col items-center">
           <Label className="mb-1 text-sm font-semibold">Minutos</Label>
           <div className="flex items-center gap-4 w-full justify-center">
-            <Button
-              onClick={() => decrement(minutes, onChangeMinutes)}
-              className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70"
-            >
-              –
-            </Button>
+            <Button onClick={() => decrement(minutes, onChangeMinutes)} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">–</Button>
             <Input
               type="number"
               value={minutes}
@@ -145,21 +105,11 @@ const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
               style={{ MozAppearance: "textfield" }}
               max={60}
             />
-            <Button
-              onClick={() => increment(minutes, onChangeMinutes, 60)}
-              className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70"
-            >
-              +
-            </Button>
+            <Button onClick={() => increment(minutes, onChangeMinutes, 60)} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">+</Button>
           </div>
           <div className="flex flex-wrap gap-2 justify-center mt-2">
             {preDefinedMinutes.map((min) => (
-              <Button
-                key={min}
-                variant={minutes === min ? "default" : "outline"}
-                onClick={() => onChangeMinutes(min)}
-                className="py-1 px-2 text-sm h-8"
-              >
+              <Button key={min} variant={minutes === min ? "default" : "outline"} onClick={() => onChangeMinutes(min)} className="py-1 px-2 text-sm h-8">
                 {min}m
               </Button>
             ))}
@@ -170,27 +120,18 @@ const TimeSelector = ({ hours, minutes, onChangeHours, onChangeMinutes }) => {
   );
 };
 
-// Valor – NumericFormat para "R$ X,XX"
 const AmountSelector = ({ amount, onChange }) => {
-  const handlePresetReais = (val) => {
-    onChange(val);
-  };
+  const handlePresetReais = (val) => onChange(val);
   const handlePresetCentavos = (val) => {
     const integerPart = Math.floor(Number(amount));
     onChange(integerPart + val / 100);
   };
   const increment = () => onChange(Number(amount) + 1);
-  const decrement = () =>
-    onChange(Number(amount) > 0 ? Number(amount) - 1 : 0);
+  const decrement = () => onChange(Number(amount) > 0 ? Number(amount) - 1 : 0);
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="flex items-center gap-4">
-        <Button
-          onClick={decrement}
-          className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70"
-        >
-          –
-        </Button>
+        <Button onClick={decrement} className="w-12 h-12 rounded-full bg-red-900 text-white opacity-70">–</Button>
         <NumericFormat
           value={amount}
           onValueChange={({ floatValue }) => onChange(floatValue || 0)}
@@ -203,41 +144,19 @@ const AmountSelector = ({ amount, onChange }) => {
           customInput={Input}
           className="w-full max-w-lg text-center text-2xl bg-transparent"
         />
-        <Button
-          onClick={increment}
-          className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70"
-        >
-          +
-        </Button>
+        <Button onClick={increment} className="w-12 h-12 rounded-full bg-green-900 text-white opacity-70">+</Button>
       </div>
       <div className="flex flex-col items-center space-y-2">
         <div className="flex flex-wrap gap-2 justify-center">
           {preDefinedAmounts.map((amt) => (
-            <Button
-              key={amt}
-              variant={
-                Math.floor(Number(amount)) === amt ? "default" : "outline"
-              }
-              onClick={() => handlePresetReais(amt)}
-              className="py-1 px-2 text-sm h-8"
-            >
+            <Button key={amt} variant={Math.floor(Number(amount)) === amt ? "default" : "outline"} onClick={() => handlePresetReais(amt)} className="py-1 px-2 text-sm h-8">
               R$ {amt}
             </Button>
           ))}
         </div>
         <div className="flex flex-wrap gap-2 justify-center">
           {preDefinedCentavos.map((cent) => (
-            <Button
-              key={cent}
-              variant={
-                Math.round((Number(amount) - Math.floor(Number(amount))) * 100) ===
-                cent
-                  ? "default"
-                  : "outline"
-              }
-              onClick={() => handlePresetCentavos(cent)}
-              className="py-1 px-2 text-sm h-8"
-            >
+            <Button key={cent} variant={Math.round((Number(amount) - Math.floor(Number(amount))) * 100) === cent ? "default" : "outline"} onClick={() => handlePresetCentavos(cent)} className="py-1 px-2 text-sm h-8">
               {cent}¢
             </Button>
           ))}
@@ -258,25 +177,19 @@ const steps = [
   { number: 4, label: "Extras", icon: ClipboardList },
 ];
 
-const fieldInputClasses =
-  "py-5 px-6 text-[1.2rem] h-[3rem] border border-gray-300 focus:border-blue-500 focus:outline-none";
+// Aqui, para tratar "Promoção", definimos que se a plataforma ou rideType for "Promoção", o Step2 (quilometragem e tempo) será ignorado.
+const isPromotion = (formValues: any) => {
+  return formValues.rideType && formValues.rideType.toLowerCase() === "promoção";
+};
+
+const fieldInputClasses = "py-5 px-6 text-[1.2rem] h-[3rem] border border-gray-300 focus:border-blue-500 focus:outline-none";
 
 // STEP 1 – Plataforma e Tipo de Corrida
-const Step1 = ({
-  formValues,
-  setFormValues,
-  setInputFocused,
-  platformOptions,
-  allRideTypes,
-}) => {
-  const selectedPlatformObj = platformOptions.find(
-    (p) => p.name === formValues.platform
-  );
+const Step1 = ({ formValues, setFormValues, setInputFocused, platformOptions, allRideTypes }) => {
+  const selectedPlatformObj = platformOptions.find((p) => p.name === formValues.platform);
   const filteredRideTypes =
     selectedPlatformObj && selectedPlatformObj.associatedRaceTypes
-      ? allRideTypes.filter((rt) =>
-          selectedPlatformObj.associatedRaceTypes.includes(rt.id)
-        )
+      ? allRideTypes.filter((rt) => selectedPlatformObj.associatedRaceTypes.includes(rt.id))
       : [];
   let instructionText = "";
   if (!formValues.platform) {
@@ -302,20 +215,10 @@ const Step1 = ({
             {platformOptions.map((option) => (
               <Button
                 key={option.id}
-                variant={
-                  formValues.platform === option.name ? "default" : "outline"
-                }
-                onClick={() =>
-                  setFormValues({
-                    ...formValues,
-                    platform: option.name,
-                    rideType: "",
-                  })
-                }
+                variant={formValues.platform === option.name ? "default" : "outline"}
+                onClick={() => setFormValues({ ...formValues, platform: option.name, rideType: "" })}
                 className={`py-2 px-3 text-sm h-[3rem] border ${
-                  formValues.platform === option.name
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : ""
+                  formValues.platform === option.name ? "bg-blue-600 text-white border-blue-600" : ""
                 }`}
               >
                 {option.name}
@@ -334,16 +237,10 @@ const Step1 = ({
             {filteredRideTypes.map((option) => (
               <Button
                 key={option.id}
-                variant={
-                  formValues.rideType === option.type ? "default" : "outline"
-                }
-                onClick={() =>
-                  setFormValues({ ...formValues, rideType: option.type })
-                }
+                variant={formValues.rideType === option.type ? "default" : "outline"}
+                onClick={() => setFormValues({ ...formValues, rideType: option.type })}
                 className={`py-2 px-3 text-sm h-[3rem] border ${
-                  formValues.rideType === option.type
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : ""
+                  formValues.rideType === option.type ? "bg-blue-600 text-white border-blue-600" : ""
                 }`}
               >
                 {option.type}
@@ -363,34 +260,34 @@ const Step1 = ({
 };
 
 // STEP 2 – Quilometragem e Tempo
-const Step2 = ({ formValues, setFormValues, setInputFocused }) => (
-  <div
-    className="p-4 space-y-6"
-    onFocusCapture={() => setInputFocused(true)}
-    onBlurCapture={() => setInputFocused(false)}
-  >
-    <div>
-      <Label className="mb-2 text-base font-semibold">Quilometragem</Label>
-      <MileageSelector
-        value={formValues.mileage || 0}
-        onChange={(value) => setFormValues({ ...formValues, mileage: value })}
-      />
+const Step2 = ({ formValues, setFormValues, setInputFocused }) => {
+  // Se for promoção, retorna null (pula esse step)
+  if (isPromotion(formValues)) return null;
+  return (
+    <div
+      className="p-4 space-y-6"
+      onFocusCapture={() => setInputFocused(true)}
+      onBlurCapture={() => setInputFocused(false)}
+    >
+      <div>
+        <Label className="mb-2 text-base font-semibold">Quilometragem</Label>
+        <MileageSelector
+          value={formValues.mileage || 0}
+          onChange={(value) => setFormValues({ ...formValues, mileage: value })}
+        />
+      </div>
+      <div>
+        <Label className="mb-2 text-base font-semibold">Tempo da Corrida</Label>
+        <TimeSelector
+          hours={formValues.hours || 0}
+          minutes={formValues.minutes || 0}
+          onChangeHours={(value) => setFormValues({ ...formValues, hours: value })}
+          onChangeMinutes={(value) => setFormValues({ ...formValues, minutes: value })}
+        />
+      </div>
     </div>
-    <div>
-      <Label className="mb-2 text-base font-semibold">
-        Tempo da Corrida
-      </Label>
-      <TimeSelector
-        hours={formValues.hours || 0}
-        minutes={formValues.minutes || 0}
-        onChangeHours={(value) => setFormValues({ ...formValues, hours: value })}
-        onChangeMinutes={(value) =>
-          setFormValues({ ...formValues, minutes: value })
-        }
-      />
-    </div>
-  </div>
-);
+  );
+};
 
 // STEP 3 – Valor
 const Step3 = ({ formValues, setFormValues, setInputFocused }) => (
@@ -406,19 +303,12 @@ const Step3 = ({ formValues, setFormValues, setInputFocused }) => (
   </div>
 );
 
-// STEP 4 – Extras com campos ocultos que são revelados ao clicar
+// STEP 4 – Extras (Data/Hora, Gorjeta e Anotações)
 const Step4 = ({ formValues, setFormValues, setInputFocused }) => {
   const toggleDateTime = () =>
-    setFormValues({
-      ...formValues,
-      useManualDate: !formValues.useManualDate,
-    });
+    setFormValues({ ...formValues, useManualDate: !formValues.useManualDate });
   const toggleExtras = () =>
-    setFormValues({
-      ...formValues,
-      showExtras: !formValues.showExtras,
-    });
-
+    setFormValues({ ...formValues, showExtras: !formValues.showExtras });
   return (
     <div
       className="p-4 space-y-6"
@@ -442,10 +332,7 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => {
                   placeholder="Selecione a data"
                   value={formValues.date || ""}
                   onChange={(e) =>
-                    setFormValues({
-                      ...formValues,
-                      date: e.target.value,
-                    })
+                    setFormValues({ ...formValues, date: e.target.value })
                   }
                   className={fieldInputClasses}
                 />
@@ -456,10 +343,7 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => {
                   placeholder="Selecione a hora"
                   value={formValues.manualTime || ""}
                   onChange={(e) =>
-                    setFormValues({
-                      ...formValues,
-                      manualTime: e.target.value,
-                    })
+                    setFormValues({ ...formValues, manualTime: e.target.value })
                   }
                   className={fieldInputClasses}
                 />
@@ -485,10 +369,7 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => {
                   placeholder="Digite o valor da gorjeta"
                   value={formValues.tip || ""}
                   onChange={(e) =>
-                    setFormValues({
-                      ...formValues,
-                      tip: e.target.value,
-                    })
+                    setFormValues({ ...formValues, tip: e.target.value })
                   }
                   className={fieldInputClasses}
                 />
@@ -499,10 +380,7 @@ const Step4 = ({ formValues, setFormValues, setInputFocused }) => {
                   placeholder="Digite suas anotações"
                   value={formValues.description || ""}
                   onChange={(e) =>
-                    setFormValues({
-                      ...formValues,
-                      description: e.target.value,
-                    })
+                    setFormValues({ ...formValues, description: e.target.value })
                   }
                   className="w-full p-6 text-[1.2rem] border-0 focus:ring-0"
                 />
@@ -543,30 +421,24 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
     useManualDate: false,
     showExtras: false,
   });
-  const [userPlatforms, setUserPlatforms] = useState<
-    { id: string; name: string; associatedRaceTypes: string[] }[]
-  >([]);
-  const [allRideTypes, setAllRideTypes] = useState<
-    { id: string; type: string }[]
-  >([]);
+  const [userPlatforms, setUserPlatforms] = useState<{ id: string; name: string; associatedRaceTypes: string[] }[]>([]);
+  const [allRideTypes, setAllRideTypes] = useState<{ id: string; type: string }[]>([]);
   const [isInputFocused, setInputFocused] = useState(false);
   const [lastChange, setLastChange] = useState(Date.now());
+  // Estado para controle da atualização do odômetro
+  const [updateOdometer, setUpdateOdometer] = useState(true);
 
   function handleChange(newValues: any) {
     setFormValues({ ...formValues, ...newValues });
     setLastChange(Date.now());
   }
 
-  useEffect(() => {
-    if (isStepComplete(currentStep) && currentStep < totalSteps && !isInputFocused) {
-      const timer = setTimeout(() => {
-        setCurrentStep(currentStep + 1);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [formValues, currentStep, lastChange, totalSteps, isInputFocused]);
-
+  // Se for promoção, ignore o Step2 automaticamente
   function isStepComplete(step: number): boolean {
+    if (isPromotion(formValues)) {
+      // Se for promoção, consideramos o step2 completo automaticamente
+      if (step === 2) return true;
+    }
     switch (step) {
       case 1:
         return !!(formValues.platform && formValues.rideType);
@@ -582,6 +454,20 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
   }
 
   useEffect(() => {
+    if (isStepComplete(currentStep) && currentStep < totalSteps && !isInputFocused) {
+      const timer = setTimeout(() => {
+        // Se for promoção, pulamos o Step2
+        if (currentStep === 1 && isPromotion(formValues)) {
+          setCurrentStep(3);
+        } else {
+          setCurrentStep(currentStep + 1);
+        }
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [formValues, currentStep, lastChange, totalSteps, isInputFocused]);
+
+  useEffect(() => {
     async function fetchUserPlatforms() {
       if (!currentUser) return;
       try {
@@ -589,9 +475,7 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
         if (profile && profile.preferredPlatforms && profile.preferredPlatforms.length > 0) {
           const res = await fetch("/api/admin/platforms");
           const allPlatforms = await res.json();
-          const filtered = allPlatforms.filter((p: any) =>
-            profile.preferredPlatforms.includes(p.id)
-          );
+          const filtered = allPlatforms.filter((p: any) => profile.preferredPlatforms.includes(p.id));
           setUserPlatforms(filtered);
           handleChange({ platform: "", rideType: "" });
         }
@@ -661,17 +545,19 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
     try {
       await addEarning(currentUser!.uid, earning);
       
-      // NOVO: Atualiza o registro de odômetro
-      // Busca o último registro de odômetro
-      const lastOdometer = await getLastOdometerRecord(currentUser!.uid);
-      const lastMileage = lastOdometer ? lastOdometer.currentMileage : 0;
-      const newMileage = lastMileage + parseFloat(formValues.mileage);
-      await addOdometerRecord(currentUser!.uid, {
-        currentMileage: newMileage,
-        note: `Ganho registrado em ${customDateTime.toISOString()}`,
-        source: "earnings",
-        sourceId: "",
-      });
+      // Atualiza o registro de odômetro somente se updateOdometer for true e se não for promoção
+      if (updateOdometer && !isPromotion(formValues)) {
+        const lastOdometer = await getLastOdometerRecord(currentUser!.uid);
+        const lastMileage = lastOdometer ? lastOdometer.currentMileage : 0;
+        const newMileage = lastMileage + parseFloat(formValues.mileage);
+        await addOdometerRecord(currentUser!.uid, {
+          currentMileage: newMileage,
+          note: `Ganho registrado em ${customDateTime.toISOString()}`,
+          source: "earnings",
+          sourceId: "",
+          recordedAt: customDateTime,
+        });
+      }
 
       toast({
         title: "Ganho registrado com sucesso!",
@@ -736,6 +622,15 @@ export default function RegisterEarnings({ onClose, onEarningAdded }: Props) {
             {renderStep()}
           </motion.div>
         </AnimatePresence>
+      </div>
+      {/* Checkbox para ignorar a atualização do odômetro */}
+      <div className="flex items-center gap-2 mt-4">
+        <Checkbox
+          type="checkbox"
+          checked={!updateOdometer}
+          onCheckedChange={(checked) => setUpdateOdometer(!checked)}
+        />
+        <span className="text-sm">Ignorar atualização do odômetro</span>
       </div>
       <div className="flex items-center justify-start mt-6 pt-6 border-t border-gray-600 gap-4">
         {currentStep > 1 && (

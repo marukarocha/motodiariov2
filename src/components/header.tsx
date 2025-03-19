@@ -39,11 +39,9 @@ export function Header() {
           </a>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-foreground" href="/earnings">
-              Ganhos
-            </a>
-            <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/dashboard/customers">
               Corridas
             </a>
+          
             <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-muted-foreground" href="/fuelings">
               Abastecimentos
             </a>

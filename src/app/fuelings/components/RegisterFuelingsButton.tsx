@@ -1,18 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import RegisterFuelings from './RegisterFuelings';
-import { PlusCircleIcon } from 'lucide-react';
-
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import RegisterFuelings from "./RegisterFuelings";
+import { BiGasPump } from "react-icons/bi";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger
-} from '@/components/ui/dialog';
+  Drawer,
+  DrawerTrigger,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 
 interface RegisterFuelingButtonProps {
   onFuelingAdded: () => void;
@@ -22,27 +21,34 @@ export function RegisterFuelingButton({ onFuelingAdded }: RegisterFuelingButtonP
   const [open, setOpen] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className='mr-3 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded'>
-        <PlusCircleIcon className="h-4 w-4 mr-2" />
-          Registrar Abastecimento</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md bg-[#1C1B22]">
-        <DialogHeader>
-          <DialogTitle>Registrar Abastecimento</DialogTitle>
-          <DialogDescription>
-            Preencha os dados do abastecimento.
-          </DialogDescription>
-        </DialogHeader>
-        <RegisterFuelings
-          onClose={() => setOpen(false)}
-          onFuelingAdded={() => {
-            setOpen(false);
-            onFuelingAdded();
-          }}
-        />
-      </DialogContent>
-    </Dialog>
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button className="mr-3 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+          <BiGasPump className="h-4 w-4 mr-2" />
+          Registrar Abastecimento
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent className="w-96  bg-[#1C1B22]">
+        <DrawerHeader>
+          <DrawerTitle>Registrar Abastecimento</DrawerTitle>
+          <p>Preencha os dados do abastecimento.</p>
+        </DrawerHeader>
+        {/* Utilizamos um div que ocupa o restante do espaço para o conteúdo */}
+        <div className="p-4 flex-1 overflow-auto">
+          <RegisterFuelings
+            onClose={() => setOpen(false)}
+            onFuelingAdded={() => {
+              setOpen(false);
+              onFuelingAdded();
+            }}
+          />
+        </div>
+        <DrawerFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Fechar
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

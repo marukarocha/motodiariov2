@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircleIcon } from 'lucide-react';
 import RegisterEarnings from '@/app/earnings/RegisterEarnings'; // Ajuste o caminho se necessário
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-
+import { TbPigMoney } from "react-icons/tb";
 interface RegisterEarningButtonProps {
   onEarningAdded: () => void;
 }
@@ -20,7 +19,7 @@ export function RegisterEarningButton({ onEarningAdded }: RegisterEarningButtonP
           onClick={() => setIsOpen(true)}
           className="bg-green-500 mr-2 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4"
         >
-          <PlusCircleIcon className="h-4 w-4 mr-2" />
+          <TbPigMoney className="h-4 w-4 mr-2" />
           Registrar Ganho
         </Button>
       </DialogTrigger>

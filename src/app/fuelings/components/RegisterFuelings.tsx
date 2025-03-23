@@ -8,7 +8,6 @@ import { NumericFormat } from "react-number-format";
 import { addFueling, addOdometerRecord } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-// Caso precise converter para Timestamp ao salvar no Firestore, importe:
 import { Timestamp } from "firebase/firestore";
 
 interface Posto {
@@ -125,20 +124,14 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       return;
     }
 
-    // Define o valor de "date": se custom, usa os valores informados; senão, usa a data/hora atual.
     let recordedAt: Date;
     if (useCustomDateTime) {
-      // O input "date" retorna em formato yyyy-mm-dd e "time" em hh:mm
       recordedAt = new Date(`${selectedDate}T${hora || "00:00"}:00`);
     } else {
       recordedAt = new Date();
     }
 
-    console.log("recordedAt:", recordedAt);
-
-    // Monta objeto de abastecimento usando o campo "date" como timestamp
     const fuelingData = {
-      // Se necessário, converta para Timestamp com Timestamp.fromDate(recordedAt)
       date: Timestamp.fromDate(recordedAt),
       litros: litrosNumber,
       posto: postoName,
@@ -147,16 +140,13 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
     };
 
     try {
-      // Registra o abastecimento e obtém o fuelingId
       const fuelingId = await addFueling(currentUser.uid, fuelingData);
-
-      // Registra o odômetro com os dados customizados (incluindo recordedAt)
       await addOdometerRecord(currentUser.uid, {
         currentMileage: odometerNumber,
         note: `Abastecimento: ${fuelingId}`,
         source: "fueling",
         sourceId: fuelingId,
-        recordedAt, // utiliza o timestamp original
+        recordedAt,
       });
 
       toast({
@@ -168,7 +158,6 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       onClose?.();
       onFuelingAdded?.();
 
-      // Limpa os campos
       setSelectedPostoId("");
       setSelectedFuel("Gasoline");
       setValorLitro("");
@@ -192,7 +181,6 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       <div className="grid grid-cols-2 gap-4">
         {/* Coluna 1 */}
         <div className="flex flex-col gap-4">
-          {/* Select do Posto */}
           <div>
             <Label htmlFor="postoSelect">Posto:</Label>
             <select
@@ -210,7 +198,6 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
             </select>
           </div>
 
-          {/* Tipo de Combustível */}
           <div>
             <Label htmlFor="fuelSelect">Combustível:</Label>
             <select
@@ -224,7 +211,6 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
             </select>
           </div>
 
-          {/* Valor por Litro */}
           <div>
             <Label htmlFor="valorLitro">Valor por Litro (R$):</Label>
             <NumericFormat
@@ -244,7 +230,6 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
 
         {/* Coluna 2 */}
         <div className="flex flex-col gap-4">
-          {/* Litros */}
           <div>
             <Label htmlFor="litros">Litros:</Label>
             <NumericFormat
@@ -260,7 +245,6 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
             />
           </div>
 
-          {/* Odômetro */}
           <div>
             <Label htmlFor="odometer">Odômetro (km):</Label>
             <NumericFormat
@@ -274,7 +258,6 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
             />
           </div>
 
-          {/* Botão para alternar uso de data/hora custom */}
           <div className="mt-7">
             <Button
               type="button"
@@ -288,7 +271,6 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
         </div>
       </div>
 
-      {/* Se o usuário optar por data/hora custom, exibe abaixo */}
       {useCustomDateTime && (
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>

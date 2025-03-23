@@ -23,12 +23,12 @@ export function RegisterFuelingButton({ onFuelingAdded }: RegisterFuelingButtonP
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button className="mr-3 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+        <Button className="mr-3 bg-green-900 hover: text-white font-bold py-2 px-4 rounded">
           <BiGasPump className="h-4 w-4 mr-2" />
           Registrar Abastecimento
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="w-96  bg-[#1C1B22]">
+      <DrawerContent className="w-4/12 justify-center items-center bg-[#1C1B22]">
         <DrawerHeader>
           <DrawerTitle>Registrar Abastecimento</DrawerTitle>
           <p>Preencha os dados do abastecimento.</p>

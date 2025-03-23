@@ -13,13 +13,16 @@ import {
   query,
   where,
   orderBy,
-  Timestamp,
   updateDoc,
-  limit,  // <-- importe limit aqui
+  limit,
+  Timestamp,
 } from "firebase/firestore";
 import { getAuth, signOut } from "firebase/auth";
 
-// Configuração do Firebase (substitua com suas credenciais)
+// -----------------------------------------------------------------------------
+// Configuração do Firebase
+// -----------------------------------------------------------------------------
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -30,14 +33,13 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Inicializa o Firebase
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-/* =======================
-   FUNÇÕES PARA EARNINGS
-   ======================= */
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA EARNINGS
+// -----------------------------------------------------------------------------
 
 export interface Earning {
   id: string;
@@ -64,18 +66,15 @@ export async function getEarnings(
   try {
     const earningsRef = collection(db, "users", userId, "earnings");
     let q;
-    if (startDate != null && endDate != null) {
-      console.log(`🔎 Filtrando ganhos entre ${startDate} e ${endDate}`);
+    if (startDate && endDate) {
       const start = new Date(startDate.getTime());
       start.setHours(0, 0, 0, 0);
-      const startTimestamp = Timestamp.fromDate(start);
       const end = new Date(endDate.getTime());
       end.setHours(23, 59, 59, 999);
-      const endTimestamp = Timestamp.fromDate(end);
       q = query(
         earningsRef,
-        where("date", ">=", startTimestamp),
-        where("date", "<=", endTimestamp),
+        where("date", ">=", Timestamp.fromDate(start)),
+        where("date", "<=", Timestamp.fromDate(end)),
         orderBy("date", "desc")
       );
     } else {
@@ -91,10 +90,9 @@ export async function getEarnings(
         date: (data.date as Timestamp).toDate(),
       } as Earning);
     });
-    console.log("📊 Ganhos retornados:", earnings);
     return earnings;
   } catch (error) {
-    console.error("❌ Erro ao obter ganhos:", error);
+    console.error("Erro ao obter ganhos:", error);
     throw error;
   }
 }
@@ -107,17 +105,15 @@ export async function calculateTotalHours(
   try {
     const earningsRef = collection(db, "users", userId, "earnings");
     let q;
-    if (startDate != null && endDate != null) {
+    if (startDate && endDate) {
       const start = new Date(startDate.getTime());
       start.setHours(0, 0, 0, 0);
-      const startTimestamp = Timestamp.fromDate(start);
       const end = new Date(endDate.getTime());
       end.setHours(23, 59, 59, 999);
-      const endTimestamp = Timestamp.fromDate(end);
       q = query(
         earningsRef,
-        where("date", ">=", startTimestamp),
-        where("date", "<=", endTimestamp),
+        where("date", ">=", Timestamp.fromDate(start)),
+        where("date", "<=", Timestamp.fromDate(end)),
         orderBy("date", "desc")
       );
     } else {
@@ -131,7 +127,6 @@ export async function calculateTotalHours(
         totalHours += Number(data.hours);
       }
     });
-    console.log(`✅ Total de horas: ${totalHours}`);
     return totalHours;
   } catch (error) {
     console.error("Erro ao calcular horas:", error);
@@ -151,7 +146,6 @@ export async function updateEarning(
       throw new Error(`Nenhum documento encontrado para o ID: ${earningId}`);
     }
     await updateDoc(earningRef, updatedData);
-    console.log("Ganho atualizado com sucesso!");
   } catch (error) {
     console.error("Erro ao atualizar ganho:", error);
     throw error;
@@ -162,51 +156,48 @@ export async function deleteEarning(userId: string, earningId: string): Promise<
   try {
     const earningRef = doc(db, "users", userId, "earnings", earningId);
     await deleteDoc(earningRef);
-    console.log("Ganho deletado com sucesso!");
   } catch (error) {
     console.error("Erro ao excluir ganho:", error);
     throw error;
   }
 }
 
-/* =======================
-   FUNÇÕES PARA MAINTENANCE
-   ======================= */
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA MAINTENANCE
+// -----------------------------------------------------------------------------
 
-   export async function addMaintenance(userId: string, maintenanceData: Record<string, unknown>): Promise<string> {
-    const userRef = doc(db, "users", userId);
-    const maintenanceRef = collection(userRef, "manutencoes");
-    const docRef = await addDoc(maintenanceRef, maintenanceData);
-    console.log("Maintenance registrado com sucesso!");
-    return docRef.id;
+export async function addMaintenance(userId: string, maintenanceData: Record<string, unknown>): Promise<string> {
+  const userRef = doc(db, "users", userId);
+  const maintenanceRef = collection(userRef, "manutencoes");
+  const docRef = await addDoc(maintenanceRef, maintenanceData);
+  return docRef.id;
+}
+
+export async function getMaintenance(userId: string): Promise<Record<string, unknown>[]> {
+  const userRef = doc(db, "users", userId);
+  const maintenanceRef = collection(userRef, "manutencoes");
+  const q = query(maintenanceRef, orderBy("timestamp", "desc"));
+  const querySnapshot = await getDocs(q);
+  const maintenance: Record<string, unknown>[] = [];
+  querySnapshot.forEach((docSnap) => {
+    maintenance.push({ id: docSnap.id, ...docSnap.data() });
+  });
+  return maintenance;
+}
+
+export async function deleteMaintenance(userId: string, maintenanceId: string): Promise<void> {
+  try {
+    const maintenanceRef = doc(db, "users", userId, "manutencoes", maintenanceId);
+    await deleteDoc(maintenanceRef);
+  } catch (error) {
+    console.error("Erro ao deletar maintenance:", error);
+    throw error;
   }
-  
-  export async function getMaintenance(userId: string): Promise<Record<string, unknown>[]> {
-    const userRef = doc(db, "users", userId);
-    const maintenanceRef = collection(userRef, "manutencoes");
-    // Alterado: ordena pelo campo "timestamp" em vez de "data"
-    const q = query(maintenanceRef, orderBy("timestamp", "desc"));
-    const querySnapshot = await getDocs(q);
-    const maintenance: Record<string, unknown>[] = [];
-    querySnapshot.forEach((docSnap) => {
-      maintenance.push({ id: docSnap.id, ...docSnap.data() });
-    });
-    return maintenance;
-  }
-  
-  export async function deleteMaintenance(userId: string, maintenanceId: string): Promise<void> {
-    try {
-      const maintenanceRef = doc(db, "users", userId, "manutencoes", maintenanceId);
-      await deleteDoc(maintenanceRef);
-      console.log(`Maintenance com ID ${maintenanceId} deletado com sucesso.`);
-    } catch (error) {
-      console.error("Erro ao deletar maintenance:", error);
-      throw error;
-    }
-  }
-/* =======================
-   FUNÇÕES PARA BIKE
-   ======================= */
+}
+
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA BIKE
+// -----------------------------------------------------------------------------
 
 export async function registerBike(userId: string, bikeData: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
@@ -221,50 +212,50 @@ export async function getBikeData(userId: string): Promise<Record<string, unknow
   return docSnap.exists() ? (docSnap.data() as Record<string, unknown>) : null;
 }
 
-/* =======================
-   FUNÇÕES PARA ABASTECIMENTOS
-   ======================= */
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA ABASTECIMENTOS
+// -----------------------------------------------------------------------------
 
 export interface Combustivel {
   id: string;
-  data: string;      // formato "dd/mm/aaaa"
-  hora: string;      // ex: "14:30"
+  date: Timestamp; // Agora armazenado como Timestamp
   litros: number;
   posto: string;
   valorLitro: number;
 }
 
-export async function addFueling(userId: string, fuelingData: Record<string, unknown>): Promise<string> {
+export async function getFuelings(
+  userId: string,
+  fromDate: Date | null = null,
+  toDate: Date | null = null
+): Promise<Combustivel[]> {
   try {
-    const fuelingsRef = collection(db, "users", userId, "abastecimentos");
-    const docRef = await addDoc(fuelingsRef, fuelingData);
-    console.log("Abastecimento registrado com sucesso!");
-    return docRef.id;
-  } catch (error) {
-    console.error("Erro ao adicionar abastecimento:", error);
-    throw error;
-  }
-}
-
-export async function getFuelings(userId: string, filterDate: Date | null = null): Promise<Combustivel[]> {
-  try {
-    let colRef = collection(db, "users", userId, "abastecimentos");
+    const colRef = collection(db, "users", userId, "abastecimentos");
     let q;
-    if (filterDate) {
-      const startOfDay = new Date(filterDate);
+    if (fromDate && toDate) {
+      const startOfDay = new Date(fromDate);
       startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(filterDate);
+      const endOfDay = new Date(toDate);
       endOfDay.setHours(23, 59, 59, 999);
-      const startStr = startOfDay.toLocaleDateString("pt-BR");
-      const endStr = endOfDay.toLocaleDateString("pt-BR");
       q = query(
         colRef,
-        where("data", ">=", startStr),
-        where("data", "<=", endStr),
-        orderBy("data", "desc")
+        where("date", ">=", Timestamp.fromDate(startOfDay)),
+        where("date", "<=", Timestamp.fromDate(endOfDay)),
+        orderBy("date", "desc")
+      );
+    } else if (fromDate) {
+      const startOfDay = new Date(fromDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(fromDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      q = query(
+        colRef,
+        where("date", ">=", Timestamp.fromDate(startOfDay)),
+        where("date", "<=", Timestamp.fromDate(endOfDay)),
+        orderBy("date", "desc")
       );
     } else {
-      q = query(colRef, orderBy("data", "desc"));
+      q = query(colRef, orderBy("date", "desc"));
     }
     const querySnapshot = await getDocs(q);
     const fuelings: Combustivel[] = [];
@@ -278,11 +269,21 @@ export async function getFuelings(userId: string, filterDate: Date | null = null
   }
 }
 
+export async function addFueling(userId: string, fuelingData: Record<string, unknown>): Promise<string> {
+  try {
+    const fuelingsRef = collection(db, "users", userId, "abastecimentos");
+    const docRef = await addDoc(fuelingsRef, fuelingData);
+    return docRef.id;
+  } catch (error) {
+    console.error("Erro ao adicionar abastecimento:", error);
+    throw error;
+  }
+}
+
 export async function deleteFueling(userId: string, fuelingId: string): Promise<void> {
   try {
     const fuelingRef = doc(db, "users", userId, "abastecimentos", fuelingId);
     await deleteDoc(fuelingRef);
-    console.log(`Abastecimento com ID ${fuelingId} deletado com sucesso.`);
   } catch (error) {
     console.error("Erro ao deletar abastecimento:", error);
     throw error;
@@ -297,16 +298,15 @@ export async function updateFueling(
   try {
     const fuelingRef = doc(db, "users", userId, "abastecimentos", fuelingId);
     await updateDoc(fuelingRef, fuelingData);
-    console.log("Abastecimento atualizado com sucesso!");
   } catch (error) {
     console.error("Erro ao atualizar abastecimento:", error);
     throw error;
   }
 }
 
-/* =======================
-   FUNÇÕES PARA CONFIGURAÇÕES
-   ======================= */
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA CONFIGURAÇÕES
+// -----------------------------------------------------------------------------
 
 export async function saveUserConfig(userId: string, configData: Record<string, unknown>): Promise<void> {
   const userRef = doc(db, "users", userId);
@@ -344,11 +344,11 @@ export async function getAppConfig(userId: string): Promise<Record<string, unkno
   return docSnap.exists() ? docSnap.data() : null;
 }
 
-/* =======================
-   FUNÇÕES PARA USUÁRIO
-   ======================= */
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA USUÁRIO
+// -----------------------------------------------------------------------------
 
-export async function updateUserData(userId: string, data: Partial<{ name: string; bikeModel: string }>) {
+export async function updateUserData(userId: string, data: Partial<{ name: string; bikeModel: string }>): Promise<void> {
   if (!userId) throw new Error("ID do usuário é necessário");
   const userRef = doc(db, "users", userId);
   try {
@@ -364,7 +364,6 @@ export async function getUserProfile(userId: string): Promise<Record<string, unk
     const userRef = doc(db, "users", userId);
     const profileRef = doc(userRef, "configurations", "user");
     const docSnap = await getDoc(profileRef);
-    console.log("Profile snapshot:", docSnap.data());
     return docSnap.exists() ? docSnap.data() : null;
   } catch (error) {
     console.error("Erro ao buscar perfil:", error);
@@ -383,41 +382,32 @@ export async function updateUserProfile(userId: string, data: Record<string, unk
   }
 }
 
-/* =======================
-   FUNÇÕES PARA LOGOUT
-   ======================= */
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA LOGOUT
+// -----------------------------------------------------------------------------
 
 export async function logout(): Promise<void> {
   try {
     await signOut(auth);
-    console.log("User logged out successfully.");
   } catch (error) {
     console.error("Erro ao realizar logout:", error);
     throw error;
   }
 }
 
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA ODOMETER RECORDS
+// -----------------------------------------------------------------------------
 
-/* =======================
-   NOVAS FUNÇÕES PARA ODOMETER RECORDS
-   ======================= */
-
-/**
- * Interface para registro do odômetro.
- */
 export interface OdometerRecord {
   id: string;
-  currentMileage: number; // Valor atual do odômetro
-  recordedAt: Date;       // Data e hora em que o registro foi salvo
-  note?: string;          // Nota opcional para o registro
-  source: "fueling" | "earnings" | "maintenance" | "manual"; // Origem do registro
-  sourceId?: string;      // ID do documento associado, se aplicável
+  currentMileage: number;
+  recordedAt: Date;
+  note?: string;
+  source: "fueling" | "earnings" | "maintenance" | "manual";
+  sourceId?: string;
 }
 
-/**
- * Adiciona um novo registro de odômetro na subcoleção "odometerRecords" do usuário.
- * Se for enviado o campo recordedAt, ele será utilizado; caso contrário, será usado o timestamp atual.
- */
 export async function addOdometerRecord(
   userId: string,
   recordData: { 
@@ -432,18 +422,14 @@ export async function addOdometerRecord(
   const odometerRef = collection(userRef, "odometerRecords");
   const newRecord = {
     ...recordData,
-    recordedAt: recordData.recordedAt 
+    recordedAt: recordData.recordedAt
       ? Timestamp.fromDate(recordData.recordedAt)
       : Timestamp.fromDate(new Date()),
   };
   const docRef = await addDoc(odometerRef, newRecord);
-  console.log("Registro de odômetro adicionado com sucesso!", newRecord);
   return docRef.id;
 }
 
-/**
- * Busca o último registro de odômetro do usuário (mais recente).
- */
 export async function getLastOdometerRecord(userId: string): Promise<OdometerRecord | null> {
   const userRef = doc(db, "users", userId);
   const odometerRef = collection(userRef, "odometerRecords");
@@ -464,9 +450,6 @@ export async function getLastOdometerRecord(userId: string): Promise<OdometerRec
   return null;
 }
 
-/**
- * Busca todos os registros de odômetro do usuário, ordenados por data (mais recentes primeiro).
- */
 export async function getOdometerRecords(userId: string): Promise<OdometerRecord[]> {
   const userRef = doc(db, "users", userId);
   const odometerRef = collection(userRef, "odometerRecords");
@@ -487,9 +470,6 @@ export async function getOdometerRecords(userId: string): Promise<OdometerRecord
   return records;
 }
 
-/**
- * Atualiza um registro específico do odômetro.
- */
 export async function updateOdometerRecord(
   userId: string,
   recordId: string,
@@ -502,17 +482,9 @@ export async function updateOdometerRecord(
 ): Promise<void> {
   const recordRef = doc(db, "users", userId, "odometerRecords", recordId);
   await updateDoc(recordRef, updatedData);
-  console.log("Registro de odômetro atualizado com sucesso!");
 }
 
-/**
- * Exclui um registro de odômetro.
- */
-export async function deleteOdometerRecord(
-  userId: string,
-  recordId: string
-): Promise<void> {
+export async function deleteOdometerRecord(userId: string, recordId: string): Promise<void> {
   const recordRef = doc(db, "users", userId, "odometerRecords", recordId);
   await deleteDoc(recordRef);
-  console.log("Registro de odômetro excluído com sucesso!");
 }

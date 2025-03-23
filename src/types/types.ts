@@ -9,15 +9,12 @@ export interface DataItem {
 // Interface para abastecimentos (fuelings)
 export interface Fueling extends DataItem {
   // Aqui, "data" é uma string que representa a data do abastecimento, por exemplo "YYYY-MM-DD" ou "DD/MM/YYYY"
-  data: string;
-  // "hora" é a hora do abastecimento, por exemplo "14:30"
-  hora: string;
-  // Quantidade de litros abastecidos
-  litros: number;
-  // Nome do posto
-  posto: string;
-  // Valor cobrado por litro
+  data: string;  // "hora" é a hora do abastecimento, por exemplo "14:30"
+  hora: string;  // Quantidade de litros abastecidos
+  litros: number;  // Nome do posto
+  posto: string;  // Valor cobrado por litro
   valorLitro: number;
+  currentMileage: number;  // Adicionado para armazenar a leitura do odômetro
 }
 
 // Interface para ganhos (earnings)

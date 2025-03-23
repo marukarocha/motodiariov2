@@ -94,8 +94,8 @@ export default function OdometerUpdateModal({ open, onClose }: OdometerUpdateMod
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+    <Dialog  open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md bg-[#1C1B22]">
         <DialogHeader>
           <DialogTitle>Atualizar Odômetro</DialogTitle>
           <DialogDescription>Insira manualmente ou tire uma foto do painel.</DialogDescription>
@@ -114,7 +114,7 @@ export default function OdometerUpdateModal({ open, onClose }: OdometerUpdateMod
         />
 
         {/* Capturar imagem para OCR */}
-        <label htmlFor="odometer-image" className="flex items-center gap-2 cursor-pointer bg-gray-200 p-2 rounded">
+        <label htmlFor="odometer-image" className="flex items-center gap-2 cursor-pointer  p-2 rounded">
           <FaCamera className="text-gray-700" />
           <span>Capturar Foto</span>
           <input type="file" id="odometer-image" accept="image/*" className="hidden" onChange={handleImageUpload} />

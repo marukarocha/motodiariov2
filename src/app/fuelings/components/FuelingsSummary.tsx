@@ -1,4 +1,4 @@
-"use client";
+// src/app/fuelings/components/FuelingsSummary.tsx
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Droplet, Calculator, List, Battery } from "lucide-react";
@@ -7,12 +7,8 @@ import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { getBikeData, getLastOdometerRecord } from "@/lib/db/firebaseServices";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-
-interface Fueling {
-  litros: number | string;
-  valorLitro: number | string;
-  currentMileage?: number;
-}
+import FuelSummaryCard from "@/app/fuelings/components/FuelSummaryCard";
+import { Fueling } from "@/types/types"; // Importa a interface correta
 
 interface FuelingsSummaryProps {
   fuelings: Fueling[];
@@ -59,7 +55,7 @@ export function FuelingsSummary({ fuelings }: FuelingsSummaryProps) {
     fetchLastOdometer();
   }, [currentUser, toast]);
 
-  // Passa os dados extras para o hook
+  // Usa o hook useFuelingsSummary para calcular dados agregados a partir de "fuelings"
   const { totalCost, totalLiters, averageCostPerLiter, totalFuelings, fuelAvailable, kilometersRemaining } =
     useFuelingsSummary(fuelings, bikeConfig || undefined, lastOdometer);
 
@@ -127,13 +123,21 @@ export function FuelingsSummary({ fuelings }: FuelingsSummaryProps) {
             <Battery className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{fuelAvailable.toFixed(2)} L</div>
-            <div className="text-sm text-muted-foreground">
-              Aproximadamente {kilometersRemaining.toFixed(0)} km restantes
-            </div>
+            {bikeConfig ? (
+              <FuelSummaryCard
+                fuelings={fuelings}
+                fuelAvailable={fuelAvailable}
+                tankVolume={bikeConfig.tankVolume}
+                kilometersRemaining={kilometersRemaining}
+              />
+            ) : (
+              <div className="text-2xl font-bold">-</div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+
+export default FuelingsSummary;

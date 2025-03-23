@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -26,17 +26,41 @@ import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { getFuelings, updateFueling, deleteFueling } from "@/lib/db/firebaseServices";
 import { Fueling } from "@/types/types";
 import ConsumptionCalculator from "@/app/fuelings/components/ConsumptionCalculator";
+import { Timestamp } from "firebase/firestore";
 
 // Consumo médio da moto (km/L)
 const AVERAGE_CONSUMPTION = 38;
 
-/**
- * Função para converter uma string de data no formato "dd/mm/yyyy" para objeto Date.
- * Caso o formato seja diferente, ajuste essa função.
- */
-const parseDate = (dateString: string): Date => {
-  const [day, month, year] = dateString.split("/");
-  return new Date(Number(year), Number(month) - 1, Number(day));
+// Funções de formatação para exibir data e hora a partir do timestamp
+const formatDate = (timestamp: Timestamp): string => {
+  const date = timestamp.toDate();
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const formatTime = (timestamp: Timestamp): string => {
+  const date = timestamp.toDate();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+// Funções para editar os valores em inputs do tipo date/time (formato ISO)
+const formatDateISO = (timestamp: Timestamp): string => {
+  const date = timestamp.toDate();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatTimeISO = (timestamp: Timestamp): string => {
+  const date = timestamp.toDate();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
 };
 
 export default function FuelingsPage() {
@@ -46,11 +70,15 @@ export default function FuelingsPage() {
   const [fuelingsData, setFuelingsData] = useState<Fueling[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Para o filtro, você pode manter o selectedDate como Date
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Estados para edição
   const [editingFuelingId, setEditingFuelingId] = useState<string | null>(null);
   const [editingFuelingData, setEditingFuelingData] = useState<Partial<Fueling> | null>(null);
+  // Estados para edição de data e hora (formato ISO)
+  const [editingDate, setEditingDate] = useState("");
+  const [editingTime, setEditingTime] = useState("");
 
   // Estados para paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,6 +89,7 @@ export default function FuelingsPage() {
     setError(null);
     try {
       if (!currentUser) return;
+      // Ajuste a query para usar o filtro baseado no campo "date" (Timestamp)
       const data = await getFuelings(currentUser.uid, selectedDate);
       setFuelingsData(data || []);
       setCurrentPage(1); // Reinicia para a primeira página ao buscar dados
@@ -83,13 +112,13 @@ export default function FuelingsPage() {
     }
   }, [currentUser, selectedDate]);
 
-  // Ordena os abastecimentos pela data (assumindo o formato "dd/mm/yyyy") em ordem decrescente
+  // Ordena os abastecimentos pela data (campo "date" como Timestamp) em ordem decrescente
   const sortedFuelings = useMemo(() => {
     const dataCopy = [...fuelingsData];
     dataCopy.sort((a, b) => {
-      const dateA = parseDate(a.data);
-      const dateB = parseDate(b.data);
-      return dateB.getTime() - dateA.getTime();
+      const timeA = a.date.toDate().getTime();
+      const timeB = b.date.toDate().getTime();
+      return timeB - timeA;
     });
     return dataCopy;
   }, [fuelingsData]);
@@ -105,24 +134,35 @@ export default function FuelingsPage() {
   const handleEdit = (fueling: Fueling) => {
     setEditingFuelingId(fueling.id);
     setEditingFuelingData({ ...fueling });
+    // Extrai data e hora em formato ISO para os inputs do tipo date e time
+    setEditingDate(formatDateISO(fueling.date));
+    setEditingTime(formatTimeISO(fueling.date));
   };
 
   const handleCancelEdit = () => {
     setEditingFuelingId(null);
     setEditingFuelingData(null);
+    setEditingDate("");
+    setEditingTime("");
   };
 
   const handleSaveEdit = async (fuelingId: string) => {
-    if (!currentUser) return;
+    if (!currentUser || !editingFuelingData) return;
     try {
-      await updateFueling(currentUser.uid, fuelingId, editingFuelingData || {});
+      // Converte os valores dos inputs de edição para um novo timestamp
+      const newDate = new Date(`${editingDate}T${editingTime}:00`);
+      // Atualiza o campo "date" com o novo timestamp
+      const updatedData = {
+        ...editingFuelingData,
+        date: Timestamp.fromDate(newDate),
+      };
+      await updateFueling(currentUser.uid, fuelingId, updatedData);
       toast({
         title: "Atualizado",
         description: "Abastecimento atualizado com sucesso!",
         variant: "success",
       });
-      setEditingFuelingId(null);
-      setEditingFuelingData(null);
+      handleCancelEdit();
       fetchData();
     } catch (error) {
       console.error("Erro ao atualizar abastecimento:", error);
@@ -176,7 +216,6 @@ export default function FuelingsPage() {
         valorLitro={6.52}
         consumoMedio={AVERAGE_CONSUMPTION}
         tanqueCapacity={12}
-        // Opcional: se desejar calcular o custo de uma corrida, por exemplo de 20 km:
         tripDistance={20}
         oilChangeCostPerInterval={40}
         oilChangeInterval={1500}
@@ -215,30 +254,26 @@ export default function FuelingsPage() {
                       <TableCell>
                         {editingFuelingId === fueling.id ? (
                           <Input
-                            type="text"
-                            value={editingFuelingData?.data || ""}
-                            onChange={(e) =>
-                              setEditingFuelingData({ ...editingFuelingData, data: e.target.value })
-                            }
+                            type="date"
+                            value={editingDate}
+                            onChange={(e) => setEditingDate(e.target.value)}
                             className="w-full"
                           />
                         ) : (
-                          fueling.data
+                          formatDate(fueling.date)
                         )}
                       </TableCell>
                       {/* Campo Hora */}
                       <TableCell>
                         {editingFuelingId === fueling.id ? (
                           <Input
-                            type="text"
-                            value={editingFuelingData?.hora || ""}
-                            onChange={(e) =>
-                              setEditingFuelingData({ ...editingFuelingData, hora: e.target.value })
-                            }
+                            type="time"
+                            value={editingTime}
+                            onChange={(e) => setEditingTime(e.target.value)}
                             className="w-full"
                           />
                         ) : (
-                          fueling.hora
+                          formatTime(fueling.date)
                         )}
                       </TableCell>
                       {/* Campo Litros */}

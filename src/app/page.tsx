@@ -6,12 +6,10 @@ import { Overview } from "@/components/overview";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { AuthProvider } from "@/components/USER/Auth/AuthContext";
 import { AuthGuard } from "@/components/USER/Auth/authGuard";
-import { RegisterEarningButton } from "@/app/earnings/RegisterEarningButton";
 import { BikeCard } from "@/app/bike/components/BikeCard";
 import { OverviewBike } from "@/app/bike/components/OverviewBike";
 import WelcomeModal from "@/components/WelcomeModal";
 import { Heart } from "lucide-react";
-import OdometerUpdateButton from "@/app/odometer/OdometerUpdateButton";
 
 export default function UserPage() {
   const { userData, earnings, error, loading } = useDashboardData();
@@ -124,14 +122,7 @@ export default function UserPage() {
                   <OverviewBike />
                 </div>
               </div>
-              <div className="rounded-lg border shadow-sm p-6">
-                <h3 className="text-lg font-medium">Seus Ganhos Recentes</h3>
-                <p className="text-sm">
-                  Você tem um total de {earnings?.length || 0} ganhos.
-                </p>
-                <RegisterEarningButton onEarningAdded={() => {}} />
-                <OdometerUpdateButton />
-              </div>
+          
               <Motivation className="mt-8" />
             </div>
           </main>

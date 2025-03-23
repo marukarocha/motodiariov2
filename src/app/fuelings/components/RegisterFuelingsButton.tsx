@@ -28,7 +28,7 @@ export function RegisterFuelingButton({ onFuelingAdded }: RegisterFuelingButtonP
         <PlusCircleIcon className="h-4 w-4 mr-2" />
           Registrar Abastecimento</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-md bg-[#1C1B22]">
         <DialogHeader>
           <DialogTitle>Registrar Abastecimento</DialogTitle>
           <DialogDescription>

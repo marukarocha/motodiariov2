@@ -8,6 +8,8 @@ import { NumericFormat } from "react-number-format";
 import { addFueling, addOdometerRecord } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+// Caso precise converter para Timestamp ao salvar no Firestore, importe:
+import { Timestamp } from "firebase/firestore";
 
 interface Posto {
   id: string;
@@ -123,38 +125,25 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       return;
     }
 
-    // Define data/hora: se custom, usa os valores informados; senão, usa a data/hora atual.
-    let dataStr = "";
-    let horaStr = "";
-    let recordedAt: Date; // Para o registro do odômetro
-
+    // Define o valor de "date": se custom, usa os valores informados; senão, usa a data/hora atual.
+    let recordedAt: Date;
     if (useCustomDateTime) {
-      const [yyyy, mm, dd] = selectedDate.split("-");
-      dataStr = `${dd}/${mm}/${yyyy}`;
-      horaStr = hora || "00:00";
-      recordedAt = new Date(`${selectedDate}T${hora}:00`);
+      // O input "date" retorna em formato yyyy-mm-dd e "time" em hh:mm
+      recordedAt = new Date(`${selectedDate}T${hora || "00:00"}:00`);
     } else {
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2, "0");
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const year = now.getFullYear();
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
-      dataStr = `${day}/${month}/${year}`;
-      horaStr = `${hours}:${minutes}`;
-      recordedAt = now;
+      recordedAt = new Date();
     }
 
     console.log("recordedAt:", recordedAt);
 
-    // Monta objeto de abastecimento
+    // Monta objeto de abastecimento usando o campo "date" como timestamp
     const fuelingData = {
-      data: dataStr,
-      hora: horaStr,
+      // Se necessário, converta para Timestamp com Timestamp.fromDate(recordedAt)
+      date: Timestamp.fromDate(recordedAt),
       litros: litrosNumber,
       posto: postoName,
       valorLitro: valorLitroNumber,
-      currentMileage: odometerNumber, // novo campo para registrar a leitura do odômetro no abastecimento
+      currentMileage: odometerNumber,
     };
 
     try {
@@ -167,7 +156,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
         note: `Abastecimento: ${fuelingId}`,
         source: "fueling",
         sourceId: fuelingId,
-        recordedAt, // Usará o valor customizado, se definido
+        recordedAt, // utiliza o timestamp original
       });
 
       toast({
@@ -281,7 +270,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
               placeholder="Ex: 12345"
               customInput={Input}
               className="w-full"
-              thousandSeparator=""  // Não utiliza separador para valores inteiros
+              thousandSeparator=""
             />
           </div>
 

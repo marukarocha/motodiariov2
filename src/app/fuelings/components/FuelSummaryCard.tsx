@@ -1,7 +1,5 @@
-// src/app/fuelings/components/FuelSummaryCard.tsx
-
 import React from 'react';
-import GaugeChart from 'react-gauge-chart';
+import { GaugeComponent } from 'react-gauge-component';
 import { Fueling } from "@/types/types";
 import { calculateAverageConsumptionFromFuelings } from '@/utils/fuelCalculations';
 import OdometerUpdateButton from "@/app/odometer/OdometerUpdateButton";
@@ -45,19 +43,36 @@ export const FuelSummaryCard = ({ fuelings, fuelAvailable, tankVolume, kilometer
       <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
         {/* Coluna 1: Gauge */}
         <div className="flex justify-center">
-          <GaugeChart
-            id="fuel-gauge-chart"
-            nrOfLevels={8}
-            percent={fuelAvailable / tankVolume > 1 ? 1 : fuelAvailable / tankVolume}
-            colors={['#FF0000', '#00FF00']}
-            arcPadding={0.05}
-            textColor="#FFF"
-            formatTextValue={() => `${((fuelAvailable / tankVolume) * 100).toFixed(0)}%`}
+          <GaugeComponent
+            value={fuelAvailable}
+            minValue={0}
+            maxValue={tankVolume}
+            arc={{
+              subArcs: [
+                { limit: tankVolume * 0.2, color: '#EA4228', showTick: true },
+                { limit: tankVolume * 0.4, color: '#F58B19', showTick: true },
+                { limit: tankVolume * 0.6, color: '#F5CD19', showTick: true },
+                { limit: tankVolume, color: '#5BE12C', showTick: true },
+              ],
+            }}
+            pointer={{
+              color: '#345243',
+              length: 0.8,
+              width: 15,
+            }}
+            labels={{
+              valueLabel: {
+                style: { fontSize: 40 },
+                formatTextValue: (value) => `${((value / tankVolume) * 100).toFixed(0)}%`,
+              },
+            }}
             style={{ width: '300px' }}
           />
         </div>
         {/* Coluna 2: Informações e cálculos */}
         <div className="pl-4">
+          <p className="text-sm font-medium">Combustivel</p>
+                    
           <p className="text-md">
             <span className="text-green-500 font-bold">{fuelAvailable.toFixed(2)}</span> litros disponíveis
           </p>

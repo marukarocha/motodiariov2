@@ -28,7 +28,7 @@ export function RegisterFuelingButton({ onFuelingAdded }: RegisterFuelingButtonP
           Registrar Abastecimento
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="w-4/12 justify-center items-center bg-[#1C1B22]">
+      <DrawerContent className="w-100 justify-center items-center bg-[#1C1B22]">
         <DrawerHeader>
           <DrawerTitle>Registrar Abastecimento</DrawerTitle>
           <p>Preencha os dados do abastecimento.</p>

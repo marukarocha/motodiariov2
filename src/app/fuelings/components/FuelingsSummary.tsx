@@ -8,7 +8,7 @@ import { getBikeData, getLastOdometerRecord } from "@/lib/db/firebaseServices";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import FuelSummaryCard from "@/app/fuelings/components/FuelSummaryCard";
-import { Fueling } from "@/types/types"; // Importa a interface correta
+import { Fueling } from "@/types/types";
 
 interface FuelingsSummaryProps {
   fuelings: Fueling[];
@@ -55,13 +55,36 @@ export function FuelingsSummary({ fuelings }: FuelingsSummaryProps) {
     fetchLastOdometer();
   }, [currentUser, toast]);
 
-  // Usa o hook useFuelingsSummary para calcular dados agregados a partir de "fuelings"
+  // Calcula dados agregados usando o hook useFuelingsSummary
   const { totalCost, totalLiters, averageCostPerLiter, totalFuelings, fuelAvailable, kilometersRemaining } =
     useFuelingsSummary(fuelings, bikeConfig || undefined, lastOdometer);
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Card de Combustível Disponível - ordem diferenciada no mobile */}
+      <div className="grid grid-cols-1 gap-4">
+        <Card className="order-first md:order-none">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Combustível Disponível</CardTitle>
+            <Battery className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {bikeConfig ? (
+              <FuelSummaryCard
+                fuelings={fuelings}
+                fuelAvailable={fuelAvailable}
+                tankVolume={bikeConfig.tankVolume}
+                kilometersRemaining={kilometersRemaining}
+              />
+            ) : (
+              <div className="text-2xl font-bold">-</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Demais cards em uma grid */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Gasto</CardTitle>
@@ -98,10 +121,6 @@ export function FuelingsSummary({ fuelings }: FuelingsSummaryProps) {
             <div className="text-2xl font-bold">{totalFuelings}</div>
           </CardContent>
         </Card>
-      </div>
-      
-      {/* Segunda linha: Cards de Autonomia / Combustível Disponível */}
-      <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Autonomia Total</CardTitle>
@@ -112,24 +131,6 @@ export function FuelingsSummary({ fuelings }: FuelingsSummaryProps) {
               <div className="text-2xl font-bold">
                 {(bikeConfig.tankVolume * bikeConfig.averageConsumption).toFixed(0)} km
               </div>
-            ) : (
-              <div className="text-2xl font-bold">-</div>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Combustível Disponível</CardTitle>
-            <Battery className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {bikeConfig ? (
-              <FuelSummaryCard
-                fuelings={fuelings}
-                fuelAvailable={fuelAvailable}
-                tankVolume={bikeConfig.tankVolume}
-                kilometersRemaining={kilometersRemaining}
-              />
             ) : (
               <div className="text-2xl font-bold">-</div>
             )}

@@ -488,3 +488,71 @@ export async function deleteOdometerRecord(userId: string, recordId: string): Pr
   const recordRef = doc(db, "users", userId, "odometerRecords", recordId);
   await deleteDoc(recordRef);
 }
+
+
+
+
+
+// configurações publicas de perfil de usuario: 
+
+
+
+export async function getUserPublicData(userId: string): Promise<Record<string, unknown> | null> {
+  try {
+    const userRef = doc(db, "users", userId);
+    const profileRef = doc(userRef, "configurations", "user");
+    const docSnap = await getDoc(profileRef);
+    console.log("Dados públicos retornados:", docSnap.data());
+    return docSnap.exists() ? docSnap.data() : null;
+  } catch (error) {
+    console.error("Erro ao buscar dados públicos:", error);
+    throw error;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FUNÇÕES PARA PEDIDOS DE CORRIDA (Rider Requests)
+// -----------------------------------------------------------------------------
+
+export interface RiderRequest {
+  client: {
+    id: string;
+    name: string;
+    phone: string;
+    email: string;
+  };
+  origin: {
+    address: string;
+    coordinates: [number, number];
+  };
+  destination: {
+    address: string;
+    coordinates: [number, number];
+  };
+  route: {
+    distance: number;  // em km
+    cost: number;      // em R$
+    duration: number;  // em minutos
+    geometry: any;     // GeoJSON (opcional)
+  };
+  rideType: "Entrega" | "Passageiro" | "Compra";
+  weightCategory: "Até 5 kg" | "5 a 15 kg" | "15 a 30 kg";
+  status: "pendente" | "em andamento" | "finalizado";
+  createdAt?: any;
+}
+
+export async function addRiderRequest(userId: string, request: RiderRequest): Promise<string> {
+  try {
+    const userRef = doc(db, "users", userId);
+    const myRidersRef = collection(userRef, "myRiders");
+    const docRef = await addDoc(myRidersRef, {
+      ...request,
+      createdAt: Timestamp.fromDate(new Date()),
+    });
+    console.log("Pedido salvo com ID:", docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error("Erro ao salvar pedido de corrida:", error);
+    throw error;
+  }
+}

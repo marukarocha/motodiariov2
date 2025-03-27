@@ -9,16 +9,17 @@ import { AuthGuard } from "@/components/USER/Auth/authGuard";
 import { BikeCard } from "@/app/bike/components/BikeCard";
 import { OverviewBike } from "@/app/bike/components/OverviewBike";
 import WelcomeModal from "@/components/WelcomeModal";
-import { Heart } from "lucide-react";
+import WelcomeBanner from "@/components/WelcomeBanner";
+import { useAuth } from "@/components/USER/Auth/AuthContext"; // Importa useAuth
 
 export default function UserPage() {
   const { userData, earnings, error, loading } = useDashboardData();
+  const { currentUser } = useAuth(); // Adicionado para obter o currentUser
   const [showOverview, setShowOverview] = useState(false);
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
 
   useEffect(() => {
-    console.log("UserData:", userData);
-    // Se os dados essenciais não estiverem preenchidos, consideramos o usuário novo
+    // Se os dados essenciais estiverem preenchidos, mostra o overview; caso contrário, exibe o modal de boas-vindas
     if (userData && userData.firstName && userData.lastName) {
       setShowOverview(true);
       setIsWelcomeModalOpen(false);
@@ -28,11 +29,6 @@ export default function UserPage() {
     }
   }, [userData]);
 
-  const handleCloseWelcomeModal = () => {
-    setIsWelcomeModalOpen(false);
-    // Opcional: recarregar os dados do usuário após o fechamento do modal
-  };
-
   if (loading) {
     return <div>Carregando dados do usuário...</div>;
   }
@@ -41,7 +37,7 @@ export default function UserPage() {
     return <div>Erro: {error}</div>;
   }
 
-  // Calcula o displayName: se useNickname for true e existir um nickname, usa-o; caso contrário, concatena firstName e lastName.
+  // Define o displayName e a URL do avatar
   const displayName = userData
     ? userData.useNickname &&
       userData.nickname &&
@@ -50,61 +46,22 @@ export default function UserPage() {
       : `${userData.firstName} ${userData.lastName}`.trim() || "usuário"
     : "usuário";
 
-  // Define a URL da imagem do avatar, ou utiliza um placeholder caso não exista
   const profileImageUrl = userData?.profileImageUrl || "/default-avatar.png";
-  
+
   return (
     <div className="container mx-auto p-4">
       <AuthProvider>
         <AuthGuard>
           <main className="flex-1">
-            <div className="container space-y-6 py-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Coluna 1 e 2: Área de boas-vindas com avatar ao lado da mensagem */}
-                <div className="md:col-span-2 flex items-center space-x-4">
-                  <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
-                    <img
-                      src={profileImageUrl}
-                      alt="Avatar"
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
-                      Olá, {displayName}!
-                    </h1>
-                    <p className="text-muted-foreground">
-                      Bem-vindo de volta! Acompanhe as últimas informações do seu dia.
-                    </p>
-                  </div>
-                </div>
-                {/* Coluna 3: Card de emergência */}
-                <div className="flex items-center justify-center p-4 border border-red-500 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Heart className="h-8 w-8 text-red-500" />
-                    <div className="text-sm">
-                      {userData?.bloodType ? (
-                        <p>
-                          <strong>Tipo Sanguíneo:</strong> {userData.bloodType}
-                        </p>
-                      ) : (
-                        <p>
-                          <strong>Tipo Sanguíneo:</strong> Não cadastrado
-                        </p>
-                      )}
-                      {userData?.emergencyPhone ? (
-                        <p>
-                          <strong>Tel. Emergência:</strong> {userData.emergencyPhone}
-                        </p>
-                      ) : (
-                        <p>
-                          <strong>Tel. Emergência:</strong> Não cadastrado
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="space-y-6 py-6">
+              {/* Componente de boas-vindas */}
+              <WelcomeBanner
+                displayName={displayName}
+                profileImageUrl={profileImageUrl}
+                bloodType={userData?.bloodType}
+                emergencyPhone={userData?.emergencyPhone}
+                profileId={currentUser?.uid || ""} // Agora currentUser está definido
+              />
 
               {showOverview && <Overview earnings={earnings} />}
               <div>
@@ -122,13 +79,12 @@ export default function UserPage() {
                   <OverviewBike />
                 </div>
               </div>
-          
               <Motivation className="mt-8" />
             </div>
           </main>
         </AuthGuard>
       </AuthProvider>
-      <WelcomeModal isOpen={isWelcomeModalOpen} onClose={handleCloseWelcomeModal} />
+      <WelcomeModal isOpen={isWelcomeModalOpen} onClose={() => setIsWelcomeModalOpen(false)} />
     </div>
   );
 }

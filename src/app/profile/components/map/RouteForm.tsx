@@ -1,6 +1,7 @@
 "use client";
-import React, { FC, ChangeEvent, useState } from 'react';
-import { getSuggestions } from '@/app/services/mapboxService';
+import React, { useState, ChangeEvent } from "react";
+import { getSuggestions } from "@/app/services/mapboxService";
+import { computeBbox, isInsideBbox } from "@/utils/geoUtils";
 
 export interface RouteData {
   origin: string;
@@ -11,116 +12,128 @@ interface RouteFormProps {
   routeData: RouteData;
   setRouteData: (data: RouteData) => void;
   calculateRoute: () => void;
-  userLocation: [number, number] | null;
+  userLocation: [number, number] | null; // se tivermos o GPS do usuário
+  radiusKm?: number; // default 150
 }
 
-const getBoundingBox = (center: [number, number], radiusKm: number): [number, number, number, number] => {
-  const [lng, lat] = center;
-  const latDiff = radiusKm / 111; // Aproximadamente 1° latitude ≈ 111 km
-  const lngDiff = radiusKm / (111 * Math.cos((lat * Math.PI) / 180));
-  return [lng - lngDiff, lat - latDiff, lng + lngDiff, lat + latDiff];
-};
+const RouteForm: React.FC<RouteFormProps> = ({
+  routeData,
+  setRouteData,
+  calculateRoute,
+  userLocation,
+  radiusKm = 150
+}) => {
+  // Armazena as features retornadas (para extrair coords e place_name).
+  const [features, setFeatures] = useState<any[]>([]);
+  const [activeField, setActiveField] = useState<"origin" | "destination" | null>(null);
 
-const RouteForm: FC<RouteFormProps> = ({ routeData, setRouteData, calculateRoute, userLocation }) => {
-  const [originSuggestions, setOriginSuggestions] = useState<any[]>([]);
-  const [destinationSuggestions, setDestinationSuggestions] = useState<any[]>([]);
-  const defaultRadius = 150; // Raio de busca definido internamente (150 km)
-  const MIN_QUERY_LENGTH = 3;
-
-  const handleOriginChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  // Ao digitar no input de origem/destino
+  const handleInputChange = async (
+    e: ChangeEvent<HTMLInputElement>,
+    field: "origin" | "destination"
+  ) => {
     const value = e.target.value;
-    setRouteData({ ...routeData, origin: value });
-    if (value && userLocation && value.trim().length >= MIN_QUERY_LENGTH) {
+    setActiveField(field);
+
+    setRouteData({ ...routeData, [field]: value });
+
+    // Gera bounding box com base no GPS
+    let bbox: [number, number, number, number] | undefined;
+    if (userLocation) {
+      bbox = computeBbox(userLocation[0], userLocation[1], radiusKm);
+    }
+
+    if (value.length > 2) {
       try {
-        const bbox = getBoundingBox(userLocation, defaultRadius);
-        const suggestions = await getSuggestions(value, bbox);
-        console.log("Sugestões de origem:", suggestions);
-        setOriginSuggestions(suggestions);
-      } catch (error) {
-        console.error("Erro ao buscar sugestões de origem:", error);
-        setOriginSuggestions([]);
+        const fts = await getSuggestions(value, bbox);
+        setFeatures(fts); // guardamos as features completas
+      } catch (err) {
+        console.error("Erro ao buscar sugestões:", err);
+        setFeatures([]);
       }
     } else {
-      setOriginSuggestions([]);
+      setFeatures([]);
     }
   };
 
-  const handleDestinationChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setRouteData({ ...routeData, destination: value });
-    if (value && userLocation && value.trim().length >= MIN_QUERY_LENGTH) {
-      try {
-        const bbox = getBoundingBox(userLocation, defaultRadius);
-        const suggestions = await getSuggestions(value, bbox);
-        console.log("Sugestões de destino:", suggestions);
-        setDestinationSuggestions(suggestions);
-      } catch (error) {
-        console.error("Erro ao buscar sugestões de destino:", error);
-        setDestinationSuggestions([]);
+  // Quando clica numa sugestão
+  const handleSelectSuggestion = (idx: number) => {
+    if (!activeField) return;
+
+    const feat = features[idx];
+    if (!feat) return;
+
+    // coords [lng, lat]
+    const coords = feat.geometry.coordinates as [number, number];
+    const placeName = feat.place_name as string;
+
+    // Se quisermos checar bounding box novamente, mesmo que o Mapbox já filtrou
+    if (userLocation) {
+      const bbox = computeBbox(userLocation[0], userLocation[1], radiusKm);
+      if (!isInsideBbox(coords, bbox)) {
+        alert(`Local fora do raio de ${radiusKm} km!`);
+        return;
       }
-    } else {
-      setDestinationSuggestions([]);
     }
-  };
 
-  const handleSelectOrigin = (placeName: string) => {
-    setRouteData({ ...routeData, origin: placeName });
-    setOriginSuggestions([]);
-  };
+    // Se OK, atualiza o RouteData
+    setRouteData({ ...routeData, [activeField]: placeName });
 
-  const handleSelectDestination = (placeName: string) => {
-    setRouteData({ ...routeData, destination: placeName });
-    setDestinationSuggestions([]);
+    // Limpa a lista de sugestões
+    setFeatures([]);
   };
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Rota</h2>
-      <div className="mb-3">
+    <div className="space-y-4">
+      {/* Origem */}
+      <div>
+        <label>Origem</label>
         <input
-          name="origin"
-          className="border p-2 w-full mb-1"
-          placeholder="Origem"
+          type="text"
+          className="border p-2 w-full"
           value={routeData.origin}
-          onChange={handleOriginChange}
+          onChange={(e) => handleInputChange(e, "origin")}
         />
-        {originSuggestions.length > 0 && (
-          <ul className="border ">
-            {originSuggestions.map((sug, idx) => (
+        {activeField === "origin" && features.length > 0 && (
+          <ul className="border shadow max-h-40 overflow-auto">
+            {features.map((ft, i) => (
               <li
-                key={idx}
-                className="p-2 cursor-pointer hover:bg-gray-900"
-                onClick={() => handleSelectOrigin(sug.place_name)}
+                key={i}
+                className="p-2 hover:bg-gray-900 cursor-pointer text-sm"
+                onClick={() => handleSelectSuggestion(i)}
               >
-                {sug.place_name}
+                {ft.place_name}
               </li>
             ))}
           </ul>
         )}
       </div>
-      <div className="mb-3">
+
+      {/* Destino */}
+      <div>
+        <label>Destino</label>
         <input
-          name="destination"
-          className="border p-2 w-full mb-1"
-          placeholder="Destino"
+          type="text"
+          className="border p-2 w-full"
           value={routeData.destination}
-          onChange={handleDestinationChange}
+          onChange={(e) => handleInputChange(e, "destination")}
         />
-        {destinationSuggestions.length > 0 && (
-          <ul className="border">
-            {destinationSuggestions.map((sug, idx) => (
+        {activeField === "destination" && features.length > 0 && (
+          <ul className="border shadow max-h-40 overflow-auto">
+            {features.map((ft, i) => (
               <li
-                key={idx}
-                className="p-2 cursor-pointer hover:bg-gray-900"
-                onClick={() => handleSelectDestination(sug.place_name)}
+                key={i}
+                className="p-2 hover:bg-gray-900 cursor-pointer text-sm"
+                onClick={() => handleSelectSuggestion(i)}
               >
-                {sug.place_name}
+                {ft.place_name}
               </li>
             ))}
           </ul>
         )}
       </div>
-      <button onClick={calculateRoute} className="w-full bg-blue-500 text-white p-2 rounded mb-4">
+
+      <button onClick={calculateRoute} className="bg-blue-500 text-white px-4 py-2 rounded">
         Calcular Rota
       </button>
     </div>

@@ -4,7 +4,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import mbxGeocoding from '@mapbox/mapbox-sdk/services/geocoding';
 import mbxDirections from '@mapbox/mapbox-sdk/services/directions';
-import QRCode from "react-qr-code"; // npm install react-qr-code
 import { CiCircleRemove } from "react-icons/ci";
 
 mapboxgl.accessToken = 'pk.eyJ1IjoibWFydWsiLCJhIjoiY204bndmdnIwMDBiYTJxb2oydW00emplcSJ9.FO5u9DFzfdDYLY2aVBm4Cg';

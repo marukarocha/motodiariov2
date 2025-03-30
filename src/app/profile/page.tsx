@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import Person from "./person";
-import PlatformUser from "./platformUser"; // importe o componente de seleção de plataformas
-import { User, Smartphone, Settings } from "lucide-react";
+import PlatformUser from "./platformUser"; // componente de seleção de plataformas
+import CardForm from "./components/client/Card"; // componente que gera o PDF com o QR Code
+import { User, Smartphone, Settings, CreditCard } from "lucide-react";
 
 export default function ProfilePage() {
   const [selectedTab, setSelectedTab] = useState("perfil");
@@ -42,6 +43,15 @@ export default function ProfilePage() {
                 <Settings className="mr-2" />
                 <span>Conta</span>
               </button>
+              <button
+                className={`flex items-center w-full text-left px-4 py-2 hover:bg-gray-700 ${
+                  selectedTab === "cartao" ? "bg-gray-700" : ""
+                }`}
+                onClick={() => setSelectedTab("cartao")}
+              >
+                <CreditCard className="mr-2" />
+                <span>Cartão</span>
+              </button>
             </nav>
           </aside>
           {/* Área de conteúdo */}
@@ -59,9 +69,14 @@ export default function ProfilePage() {
             {selectedTab === "conta" && (
               <div>
                 <h2 className="text-2xl font-bold mb-4">Conta</h2>
-                <p>
-                  Aqui o usuário poderá alterar a senha e o nome de usuário.
-                </p>
+                <p>Aqui o usuário poderá alterar a senha e o nome de usuário.</p>
+              </div>
+            )}
+            {selectedTab === "cartao" && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4">Cartão de Visita</h2>
+                {/* Passe os dados do usuário conforme necessário */}
+                 <CardForm  />
               </div>
             )}
           </main>

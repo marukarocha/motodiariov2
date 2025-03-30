@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import ContactStatus from "@/app/profile/components/client/ContactStatus";
-import RouteCalculator from "@/app/profile/components/map/RouteCalculator";
+import QRCodePage from "@/app/profile/components/client/QRCodePage";
 import Testimonials from "@/app/profile/components/client/Testimonials";
 import LatestDeliveries from "@/app/profile/components/client/LatestDeliveries";
-import QRCodePage from "@/app/profile/components/client/QRCodePage";
+import RouteCalculatorWithStepper from "@/app/profile/components/map/RouteCalculator";
 import { getUserPublicData } from "@/lib/db/firebaseServices";
 
 interface PublicUserData {
@@ -27,7 +27,7 @@ function mapPublicUserData(data: Record<string, any>): PublicUserData {
       data.nickname && data.nickname.trim() !== ""
         ? data.nickname
         : `${data.firstName} ${data.lastName}`.trim(),
-    profileImageUrl: data.profileImageUrl,
+    profileImageUrl: data.profileImageUrl ?? "",
     isVerified: data.isVerified ?? true,
     badges: data.badges ?? ["DogCrazy", "Líder entregas", "+1k entregas"],
     bloodType: data.bloodType,
@@ -45,6 +45,7 @@ export default function PublicProfilePage() {
 
   useEffect(() => {
     if (!id) return;
+
     async function fetchData() {
       try {
         const data = await getUserPublicData(id);
@@ -61,6 +62,7 @@ export default function PublicProfilePage() {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [id]);
 
@@ -71,7 +73,7 @@ export default function PublicProfilePage() {
   return (
     <div className="container mx-auto p-4 space-y-8">
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Seção de boas-vindas */}
+        {/* Banner de boas-vindas com foto/perfil e badges */}
         <WelcomeBanner
           displayName={userData.name}
           profileImageUrl={userData.profileImageUrl}
@@ -79,23 +81,25 @@ export default function PublicProfilePage() {
           badges={userData.badges}
           bloodType={userData.bloodType}
           emergencyPhone={userData.emergencyPhone}
-          profileId={id}
+          profileId={id as string}
         />
-        {/* Seção de contato e status */}
+
+        {/* Status de contato (online/offline, email) */}
         <ContactStatus
           contactEmail={userData.contactEmail || ""}
           online={userData.online}
         />
-         <QRCodePage profileId={id} />
+
+        {/* Geração de QR Code (opcional) */}
+        <QRCodePage profileId={id as string} />
       </div>
-      {/* Componente QRCodePage para gerar o QR Code com o link do perfil */}
-     
-      {/* Calculadora de Rotas */}
-      <RouteCalculator />
+
+      {/* Calculadora de rotas (Map + Stepper) */}
+      <RouteCalculatorWithStepper profileId={id as string} />
+
+      {/* Seção de Depoimentos e Entregas Recentes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Depoimentos */}
         <Testimonials />
-        {/* Últimas Entregas */}
         <LatestDeliveries />
       </div>
     </div>

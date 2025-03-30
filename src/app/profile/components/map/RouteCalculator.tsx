@@ -1,19 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useRef, ChangeEvent } from "react";
+import React, { useState, useRef, ChangeEvent, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Stepper from "@/app/profile/components/map/stepper";
 import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+import Stepper from "@/app/profile/components/map/stepper";
 import ContactForm from "@/app/profile/components/map/ContactForm";
 import RouteForm, { RouteData } from "@/app/profile/components/map/RouteForm";
-import { getCoordinates, getRoute, reverseGeocode } from "@/app/services/mapboxService";
 import RouteList, { RouteResult } from "@/app/profile/components/map/RouteList";
-import QRCode from "react-qr-code";
+import Map from "@/app/profile/components/map/Map";
+
 import { Button } from "@/components/ui/button";
 import { addRiderRequest, RiderRequest } from "@/lib/db/firebaseServices";
+import * as turf from "@turf/turf";
 
-// Definindo as cores para as rotas
-const routeColors = ["#007AFF", "#FF5733", "#28A745", "#FFD700", "#8A2BE2"];
+// Importa do seu mapboxService (com getCoordinates, getRoute, reverseGeocode)
+import { getCoordinates, getRoute, reverseGeocode } from "@/app/services/mapboxService";
 
 interface Contact {
   name: string;
@@ -21,22 +24,69 @@ interface Contact {
   email: string;
 }
 
-// Interface para os detalhes do pedido
 interface RequestDetails {
   rideType: "Entrega" | "Passageiro" | "Compra";
   weightCategory: "Até 5 kg" | "5 a 15 kg" | "15 a 30 kg";
 }
 
-const RouteCalculatorWithStepper: React.FC = () => {
-  // Etapas: 1 = Contato, 2 = Detalhes do Pedido e Definir Rota, 3 = Resumo
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const steps = ["Contato", "Detalhes do Pedido", "Resumo"];
+interface RouteCalculatorProps {
+  profileId: string;
+}
 
-  const [contact, setContact] = useState<Contact>({ name: "", phone: "", email: "" });
+const routeColors = ["#007AFF", "#FF5733", "#28A745", "#FFD700", "#8A2BE2"];
+
+/** Soma o overlap em km (lineOverlap) */
+function calcularOverlapTotal(routeResults: RouteResult[]): number {
+  let totalKm = 0;
+  for (let i = 0; i < routeResults.length; i++) {
+    for (let j = i + 1; j < routeResults.length; j++) {
+      const overlap = turf.lineOverlap(routeResults[i].geojson, routeResults[j].geojson, {
+        tolerance: 0.0001,
+      });
+      overlap.features.forEach((feat) => {
+        totalKm += turf.length(feat, { units: "kilometers" });
+      });
+    }
+  }
+  return totalKm;
+}
+
+/** Se quiser desenhar a overlap em branco no mapa */
+function calcularOverlapFeatures(routeResults: RouteResult[]): GeoJSON.FeatureCollection {
+  const feats: GeoJSON.Feature[] = [];
+  for (let i = 0; i < routeResults.length; i++) {
+    for (let j = i + 1; j < routeResults.length; j++) {
+      const overlap = turf.lineOverlap(routeResults[i].geojson, routeResults[j].geojson, {
+        tolerance: 0.0001,
+      });
+      overlap.features.forEach((f) => feats.push(f));
+    }
+  }
+  return {
+    type: "FeatureCollection",
+    features: feats,
+  };
+}
+
+const RouteCalculatorWithStepper: React.FC<RouteCalculatorProps> = ({ profileId }) => {
+  // Passos do stepper
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const steps = ["Contato", "Pedido", "Rota", "Resumo"];
+
+  // Passo 1: contato
+  const [contact, setContact] = useState<Contact>({
+    name: "",
+    phone: "",
+    email: "",
+  });
+
+  // Passo 2: detalhes do pedido
   const [requestDetails, setRequestDetails] = useState<RequestDetails>({
     rideType: "Entrega",
     weightCategory: "Até 5 kg",
   });
+
+  // Passo 3: dados de rota
   const [routeData, setRouteData] = useState<RouteData>({ origin: "", destination: "" });
   const [routeResults, setRouteResults] = useState<RouteResult[]>([]);
   const [currentRouteInfo, setCurrentRouteInfo] = useState<{
@@ -44,112 +94,164 @@ const RouteCalculatorWithStepper: React.FC = () => {
     cost: string;
     duration: number;
   } | null>(null);
-  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
-  // Refs para os markers de origem e destino
+  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+
+  // Markers
   const originMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null);
 
-  // Inicializa o mapa com estilo dark
-  const initializeMap = (container: HTMLDivElement, center: [number, number]) => {
-    const map = new mapboxgl.Map({
-      container,
-      style: "mapbox://styles/mapbox/dark-v10",
-      center,
-      zoom: 12,
-    });
-    setMapInstance(map);
-  };
+  // Overlap km
+  const [overlapKm, setOverlapKm] = useState<number>(0);
 
-  // Obtém a localização do usuário
-  useEffect(() => {
+  // handleMapLoad
+  const handleMapLoad = (map: mapboxgl.Map) => {
+    setMapInstance(map);
+
+    // Exemplo: centrar no GPS
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const loc: [number, number] = [position.coords.longitude, position.coords.latitude];
-          setUserLocation(loc);
-          if (!mapInstance) {
-            const container = document.getElementById("map-container");
-            if (container) {
-              initializeMap(container as HTMLDivElement, loc);
-            }
-          }
+        (pos) => {
+          const loc: [number, number] = [pos.coords.longitude, pos.coords.latitude];
+          map.setCenter(loc);
+          map.setZoom(12);
         },
-        (err) => console.error(err)
+        (err) => console.error("Erro geoloc:", err)
       );
     }
-  }, [mapInstance]);
 
-  // Listener para cliques no mapa: cria/atualiza markers e faz reverse geocoding
-  useEffect(() => {
-    if (mapInstance) {
-      const handleMapClick = async (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
-        const coords: [number, number] = [e.lngLat.lng, e.lngLat.lat];
-        if (!originMarkerRef.current) {
-          originMarkerRef.current = new mapboxgl.Marker({ draggable: true, color: "green" })
-            .setLngLat(coords)
-            .addTo(mapInstance);
+    map.on("click", handleMapClick);
+  };
+
+  const handleMapClick = async (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
+    if (!mapInstance) return;
+    const coords: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+  
+    // Se temos a posição do usuário (GPS) e queremos limitar a 150 km
+    if (userLocation) {
+      // Cria bounding box em torno do GPS
+      const bbox = computeBbox(userLocation[0], userLocation[1], 150);
+      // Checa se as coords do clique estão dentro dessa box
+      if (!isInsideBbox(coords, bbox)) {
+        alert("Fora do raio de 150 km!");
+        return; // Cancela antes de criar o marcador
+      }
+    }
+  
+    // Se passou pela checagem, criamos/atualizamos o pin
+    if (!originMarkerRef.current) {
+      // Cria o pin de origem (verde)
+      originMarkerRef.current = new mapboxgl.Marker({ draggable: true, color: "green" })
+        .setLngLat(coords)
+        .addTo(mapInstance);
+  
+      try {
+        const address = await reverseGeocode(coords);
+        setRouteData((prev) => ({ ...prev, origin: address }));
+      } catch (err) {
+        console.error("Erro reverse geocode (origem):", err);
+      }
+  
+      // Dragend da origem
+      originMarkerRef.current.on("dragend", async () => {
+        const mPos = originMarkerRef.current?.getLngLat();
+        if (mPos) {
+          const c: [number, number] = [mPos.lng, mPos.lat];
           try {
-            const address = await reverseGeocode(coords);
+            const address = await reverseGeocode(c);
             setRouteData((prev) => ({ ...prev, origin: address }));
-          } catch (error) {
-            console.error(error);
-          }
-          originMarkerRef.current.on("dragend", async () => {
-            const newCoords = originMarkerRef.current?.getLngLat();
-            if (newCoords) {
-              try {
-                const address = await reverseGeocode([newCoords.lng, newCoords.lat]);
-                setRouteData((prev) => ({ ...prev, origin: address }));
-              } catch (error) {
-                console.error(error);
-              }
-            }
-          });
-        } else if (!destinationMarkerRef.current) {
-          destinationMarkerRef.current = new mapboxgl.Marker({ draggable: true, color: "red" })
-            .setLngLat(coords)
-            .addTo(mapInstance);
-          try {
-            const address = await reverseGeocode(coords);
-            setRouteData((prev) => ({ ...prev, destination: address }));
-          } catch (error) {
-            console.error(error);
-          }
-          destinationMarkerRef.current.on("dragend", async () => {
-            const newCoords = destinationMarkerRef.current?.getLngLat();
-            if (newCoords) {
-              try {
-                const address = await reverseGeocode([newCoords.lng, newCoords.lat]);
-                setRouteData((prev) => ({ ...prev, destination: address }));
-              } catch (error) {
-                console.error(error);
-              }
-            }
-          });
-        } else {
-          destinationMarkerRef.current.setLngLat(coords);
-          try {
-            const address = await reverseGeocode(coords);
-            setRouteData((prev) => ({ ...prev, destination: address }));
-          } catch (error) {
-            console.error(error);
+          } catch (err) {
+            console.error("Erro reverse geocode (drag origem):", err);
           }
         }
-      };
-
-      mapInstance.on("click", handleMapClick);
-      return () => {
-        mapInstance.off("click", handleMapClick);
-      };
+      });
+    } else if (!destinationMarkerRef.current) {
+      // Cria destino (vermelho)
+      destinationMarkerRef.current = new mapboxgl.Marker({ draggable: true, color: "red" })
+        .setLngLat(coords)
+        .addTo(mapInstance);
+  
+      try {
+        const address = await reverseGeocode(coords);
+        setRouteData((prev) => ({ ...prev, destination: address }));
+      } catch (err) {
+        console.error("Erro reverse geocode (destino):", err);
+      }
+  
+      // Dragend do destino
+      destinationMarkerRef.current.on("dragend", async () => {
+        const mPos = destinationMarkerRef.current?.getLngLat();
+        if (mPos) {
+          const c: [number, number] = [mPos.lng, mPos.lat];
+          try {
+            const address = await reverseGeocode(c);
+            setRouteData((prev) => ({ ...prev, destination: address }));
+          } catch (err) {
+            console.error("Erro reverse geocode (drag destino):", err);
+          }
+        }
+      });
+    } else {
+      // Já temos ambos => atualiza apenas o destino
+      destinationMarkerRef.current.setLngLat(coords);
+      try {
+        const address = await reverseGeocode(coords);
+        setRouteData((prev) => ({ ...prev, destination: address }));
+      } catch (err) {
+        console.error("Erro reverse geocode (update destino):", err);
+      }
     }
-  }, [mapInstance]);
+  };
 
-  // Função para calcular a rota (na etapa "Definir Rota")
+  // Recalcula overlap
+  const updateOverlap = () => {
+    if (!mapInstance || routeResults.length < 2) {
+      setOverlapKm(0);
+      if (mapInstance?.getLayer("overlap-layer")) {
+        mapInstance.removeLayer("overlap-layer");
+      }
+      if (mapInstance?.getSource("overlap-layer")) {
+        mapInstance.removeSource("overlap-layer");
+      }
+      return;
+    }
+    const km = calcularOverlapTotal(routeResults);
+    setOverlapKm(km);
+
+    // Remove se existir
+    if (mapInstance.getLayer("overlap-layer")) {
+      mapInstance.removeLayer("overlap-layer");
+    }
+    if (mapInstance.getSource("overlap-layer")) {
+      mapInstance.removeSource("overlap-layer");
+    }
+
+    // Adiciona layer
+    const feats = calcularOverlapFeatures(routeResults);
+    mapInstance.addSource("overlap-layer", {
+      type: "geojson",
+      data: feats
+    });
+    mapInstance.addLayer({
+      id: "overlap-layer",
+      type: "line",
+      source: "overlap-layer",
+      layout: {
+        "line-join": "round",
+        "line-cap": "round"
+      },
+      paint: {
+        "line-color": "#ffffff",
+        "line-width": 4,
+        "line-dasharray": [2, 2]
+      }
+    });
+  };
+
+  // Calcular rota
   const calculateRoute = async () => {
     if (!routeData.origin || !routeData.destination) {
-      alert("Informe ambos os endereços (origem e destino).");
+      alert("Informe origem e destino.");
       return;
     }
     try {
@@ -172,47 +274,74 @@ const RouteCalculatorWithStepper: React.FC = () => {
         cost,
         duration,
         geojson: route.geometry,
-        color,
+        color
       };
 
-      setRouteResults((prev) => [...prev, newRoute]);
+      setRouteResults((old) => [...old, newRoute]);
 
       if (mapInstance) {
         drawRoute(newRoute, originCoords, destCoords);
       }
-      // Nesta etapa, não limpamos o campo destination para manter os dados visíveis no resumo
+
+      // Recalcular overlap
+      setTimeout(() => updateOverlap(), 0);
+
     } catch (err) {
-      console.error(err);
-      alert("Erro ao calcular a rota. Verifique os endereços.");
+      console.error("Erro ao calcular rota:", err);
+      alert("Falha ao obter rota. Verifique seu endereço.");
     }
   };
 
-  const drawRoute = (route: RouteResult, originCoords: [number, number], destCoords: [number, number]) => {
+  // Desenhar rota
+  const drawRoute = (
+    route: RouteResult,
+    originCoords: [number, number],
+    destCoords: [number, number]
+  ) => {
     if (!mapInstance) return;
+
+    if (!mapInstance.isStyleLoaded()) {
+      mapInstance.once("load", () => addRouteLayer(route, originCoords, destCoords));
+    } else {
+      addRouteLayer(route, originCoords, destCoords);
+    }
+  };
+
+  const addRouteLayer = (
+    route: RouteResult,
+    originCoords: [number, number],
+    destCoords: [number, number]
+  ) => {
+    if (!mapInstance) return;
+
     if (!mapInstance.getSource(route.id)) {
       mapInstance.addSource(route.id, {
         type: "geojson",
         data: {
           type: "Feature",
           properties: {},
-          geometry: route.geometry,
+          geometry: route.geojson
         },
       });
       mapInstance.addLayer({
         id: route.id,
         type: "line",
         source: route.id,
-        layout: { "line-join": "round", "line-cap": "round" },
+        layout: {
+          "line-join": "round",
+          "line-cap": "round"
+        },
         paint: {
           "line-color": route.color,
-          "line-width": 4,
-          "line-dasharray": [2, 4],
-        },
+          "line-width": 4
+        }
       });
     }
+
     mapInstance.fitBounds([originCoords, destCoords], { padding: 60 });
   };
 
+  // Remover rotas
   const resetRoute = () => {
     setRouteData({ origin: "", destination: "" });
     setRouteResults([]);
@@ -220,213 +349,249 @@ const RouteCalculatorWithStepper: React.FC = () => {
     destinationMarkerRef.current?.remove();
     originMarkerRef.current = null;
     destinationMarkerRef.current = null;
+    setCurrentRouteInfo(null);
+    setOverlapKm(0);
+
+    if (mapInstance) {
+      routeResults.forEach((r) => {
+        if (mapInstance.getLayer(r.id)) {
+          mapInstance.removeLayer(r.id);
+        }
+        if (mapInstance.getSource(r.id)) {
+          mapInstance.removeSource(r.id);
+        }
+      });
+      // overlap
+      if (mapInstance.getLayer("overlap-layer")) {
+        mapInstance.removeLayer("overlap-layer");
+      }
+      if (mapInstance.getSource("overlap-layer")) {
+        mapInstance.removeSource("overlap-layer");
+      }
+    }
   };
 
+  // Remover rota individual
+  const handleRemoveRoute = (id: string) => {
+    const newArr = routeResults.filter((r) => r.id !== id);
+    setRouteResults(newArr);
+
+    if (mapInstance) {
+      if (mapInstance.getLayer(id)) {
+        mapInstance.removeLayer(id);
+      }
+      if (mapInstance.getSource(id)) {
+        mapInstance.removeSource(id);
+      }
+    }
+    setTimeout(() => updateOverlap(), 0);
+  };
+
+  // Enviar no WhatsApp
   const sendViaWhatsApp = () => {
-    let message = `Dados do Cliente:%0ANome: ${contact.name}%0ATelefone: ${contact.phone}%0AEmail: ${contact.email}%0A%0ARotas:%0A`;
-    routeResults.forEach((r, index) => {
-      message += `Entrega ${index + 1}:%0AOrigem: ${r.origin}%0ADestino: ${r.destination}%0ADistância: ${r.km} km | Valor: R$ ${r.cost}%0ADuração: ${r.duration} min%0A%0A`;
+    let message = `Cliente: ${contact.name}%0A${contact.phone}%0A${contact.email}%0A%0ARotas:%0A`;
+    routeResults.forEach((r, i) => {
+      message += `Rota ${i + 1}: ${r.origin} -> ${r.destination}%0A${r.km} km | R$ ${r.cost}%0A%0A`;
     });
     window.open(`https://wa.me/?text=${message}`, "_blank");
   };
 
-  const handlePrint = () => window.print();
-
-  // Função para salvar o pedido no Firebase
+  // Salvar no Firebase
   const savePedido = async () => {
-  // Monte o objeto do pedido
-  const pedido: RiderRequest = {
-    client: {
-      id: contact.email, // Substitua por um identificador único se necessário
-      name: contact.name,
-      phone: contact.phone,
-      email: contact.email,
-    },
-    origin: {
-      address: routeData.origin,
-      coordinates: userLocation || [0, 0],
-    },
-    destination: {
-      address: routeData.destination,
-      coordinates: userLocation || [0, 0],
-    },
-    route: {
-      distance: currentRouteInfo ? Number(currentRouteInfo.km) : 0,
-      cost: currentRouteInfo ? Number(currentRouteInfo.cost) : 0,
-      duration: currentRouteInfo ? currentRouteInfo.duration : 0,
-      // Converter o objeto GeoJSON para string para evitar nested arrays
-      geometry: routeResults.length > 0 ? JSON.stringify(routeResults[routeResults.length - 1].geojson) : "",
-    },
-    rideType: requestDetails.rideType,
-    weightCategory: requestDetails.weightCategory,
-    status: "pendente",
+    if (!currentRouteInfo) {
+      alert("Calcule ao menos uma rota.");
+      return;
+    }
+    const pedido: RiderRequest = {
+      client: {
+        id: contact.email || "no-email",
+        name: contact.name || "Sem nome",
+        phone: contact.phone || "Sem telefone",
+        email: contact.email || "Sem email"
+      },
+      origin: {
+        address: routeData.origin,
+        coordinates: [0, 0]
+      },
+      destination: {
+        address: routeData.destination,
+        coordinates: [0, 0]
+      },
+      route: routeResults.map((r) => ({
+        id: r.id,
+        origin: r.origin,
+        destination: r.destination,
+        km: Number(r.km),
+        cost: Number(r.cost),
+        duration: r.duration,
+        geometry: JSON.stringify(r.geojson),
+        color: r.color
+      })),
+      rideType: requestDetails.rideType,
+      weightCategory: requestDetails.weightCategory,
+      status: "pendente"
+    };
+
+    try {
+      const id = await addRiderRequest(profileId, pedido);
+      alert("Pedido salvo! ID: " + id);
+    } catch (err) {
+      console.error("Erro ao salvar:", err);
+      alert("Falha ao salvar pedido.");
+    }
   };
 
-  try {
-    // Substitua "currentUserId" pelo ID real do usuário (por exemplo, auth.currentUser.uid)
-    const id = await addRiderRequest("currentUserId", pedido);
-    console.log("Pedido salvo com sucesso, ID:", id);
-    alert("Pedido salvo com sucesso!");
-  } catch (error) {
-    console.error("Erro ao salvar pedido:", error);
-    alert("Erro ao salvar o pedido.");
-  }
-};
-
-  // Variantes para animação com Framer Motion
+  // Animações
   const variants = {
     initial: { opacity: 0, x: 50 },
     enter: { opacity: 1, x: 0, transition: { duration: 0.4 } },
     exit: { opacity: 0, x: -50, transition: { duration: 0.4 } },
   };
 
-  // Renderiza o conteúdo da sidebar conforme a etapa
-  const renderSidebarContent = () => {
+  const stepsContent = () => {
     switch (currentStep) {
       case 1:
         return (
           <div className="space-y-4">
             <ContactForm contact={contact} setContact={setContact} />
             <div className="flex justify-end">
-              <Button onClick={() => setCurrentStep(2)} className="bg-blue-500 text-white px-4 py-2 rounded">
-                Próximo
-              </Button>
+              <Button onClick={() => setCurrentStep(2)}>Próximo</Button>
             </div>
           </div>
         );
       case 2:
         return (
           <div className="space-y-4">
-            <div className="mb-4">
-              <h2 className="text-xl font-bold">Detalhes do Pedido</h2>
-              <div className="mb-2">
-                <label className="block mb-1">Tipo de Corrida</label>
-                <select
-                  value={requestDetails.rideType}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                    setRequestDetails((prev) => ({ ...prev, rideType: e.target.value as any }))
-                  }
-                  className="border p-2 w-full"
-                >
-                  <option value="Entrega">Entrega</option>
-                  <option value="Passageiro">Passageiro</option>
-                  <option value="Compra">Compra</option>
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1">Categoria de Peso</label>
-                <select
-                  value={requestDetails.weightCategory}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                    setRequestDetails((prev) => ({ ...prev, weightCategory: e.target.value as any }))
-                  }
-                  className="border p-2 w-full"
-                >
-                  <option value="Até 5 kg">Até 5 kg</option>
-                  <option value="5 a 15 kg">5 a 15 kg</option>
-                  <option value="15 a 30 kg">15 a 30 kg</option>
-                </select>
-              </div>
-            </div>
-            <div className="mb-4">
-              <h2 className="text-xl font-bold">Definir Rota</h2>
-              <RouteForm
-                routeData={routeData}
-                setRouteData={setRouteData}
-                calculateRoute={calculateRoute}
-                userLocation={userLocation}
-              />
-              <div className="mt-4">
-                <RouteList
-                  routeResults={routeResults}
-                  removeRoute={(id) =>
-                    setRouteResults(routeResults.filter((r) => r.id !== id))
-                  }
-                  contact={contact}
-                />
-              </div>
-            </div>
-            <div className="flex justify-between">
-              <Button onClick={() => setCurrentStep(1)} className="bg-gray-400 text-white px-4 py-2 rounded">
-                Voltar
-              </Button>
-              <Button
-                onClick={async () => {
-                  await calculateRoute();
-                  setCurrentStep(3);
-                }}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
+            <h2 className="text-xl font-bold">Detalhes do Pedido</h2>
+            <div>
+              <label>Tipo de Corrida</label>
+              <select
+                value={requestDetails.rideType}
+                onChange={(e) =>
+                  setRequestDetails({
+                    ...requestDetails,
+                    rideType: e.target.value as any,
+                  })
+                }
+                className="border p-2 w-full"
               >
-                Calcular e Avançar
-              </Button>
+                <option value="Entrega">Entrega</option>
+                <option value="Passageiro">Passageiro</option>
+                <option value="Compra">Compra</option>
+              </select>
+            </div>
+            <div>
+              <label>Categoria de Peso</label>
+              <select
+                value={requestDetails.weightCategory}
+                onChange={(e) =>
+                  setRequestDetails({
+                    ...requestDetails,
+                    weightCategory: e.target.value as any,
+                  })
+                }
+                className="border p-2 w-full"
+              >
+                <option value="Até 5 kg">Até 5 kg</option>
+                <option value="5 a 15 kg">5 a 15 kg</option>
+                <option value="15 a 30 kg">15 a 30 kg</option>
+              </select>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setCurrentStep(3)}>Próximo</Button>
             </div>
           </div>
         );
       case 3:
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Resumo</h2>
-            <p>Total de rotas: {routeResults.length}</p>
-            <p>
-              Valor total: R${" "}
-              {routeResults.reduce((acc, curr) => acc + Number(curr.cost), 0).toFixed(2)}
-            </p>
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <Button onClick={sendViaWhatsApp} className="bg-green-500 text-white px-4 py-2 rounded">
-                Enviar WhatsApp
-              </Button>
-              <Button onClick={handlePrint} className="bg-blue-500 text-white px-4 py-2 rounded">
-                Imprimir
-              </Button>
-              <Button onClick={resetRoute} className="bg-red-500 text-white px-4 py-2 rounded">
-                Nova Rota
-              </Button>
-              <Button onClick={savePedido} className="bg-indigo-600 text-white px-4 py-2 rounded">
-                Confirmar Pedido
-              </Button>
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Definir Rota</h2>
+            <RouteForm
+              routeData={routeData}
+              setRouteData={setRouteData}
+              calculateRoute={calculateRoute}
+              userLocation={null} 
+            />
+            <div className="mt-4">
+              <RouteList
+                routeResults={routeResults}
+                removeRoute={handleRemoveRoute}
+                contact={contact}
+              />
             </div>
-            <div className="mt-6">
-              <div className="flex flex-col items-center p-4 border rounded shadow">
-                <h2 className="text-xl font-bold mb-4">Compartilhe seu Perfil</h2>
-                <QRCode value={`${window.location.origin}/profile/${contact.email}`} size={250} />
-                <p className="mt-4 text-sm text-gray-300">
-                  {`${window.location.origin}/profile/${contact.email}`}
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={() => setCurrentStep(2)} className="bg-gray-400 text-white px-4 py-2 rounded">
-                Voltar
-              </Button>
+            <div className="flex justify-between">
+              <Button onClick={() => setCurrentStep(2)}>Voltar</Button>
+              <Button onClick={() => setCurrentStep(4)}>Próximo</Button>
             </div>
           </div>
         );
+      case 4: {
+        const totalSemDesc = routeResults.reduce((acc, r) => acc + Number(r.cost), 0);
+        const discount = overlapKm; // Exemplo: 1 real de desconto por km sobreposto
+        const totalFinal = totalSemDesc - discount;
+
+        return (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Resumo</h2>
+            <p>Rotas: {routeResults.length}</p>
+            {routeResults.length > 1 && (
+              <>
+                <p>Trecho compartilhado: {overlapKm.toFixed(2)} km</p>
+                <p>Desconto: R$ {discount.toFixed(2)}</p>
+              </>
+            )}
+            <p>Valor sem desconto: R$ {totalSemDesc.toFixed(2)}</p>
+            <p>Valor final: R$ {totalFinal.toFixed(2)}</p>
+
+            <div className="flex gap-2">
+              <Button onClick={sendViaWhatsApp} className="bg-green-500">
+                WhatsApp
+              </Button>
+              <Button onClick={savePedido} className="bg-green-600">
+                Confirmar
+              </Button>
+            </div>
+            <div>
+              <Button onClick={() => setCurrentStep(3)}>Voltar</Button>
+            </div>
+          </div>
+        );
+      }
       default:
         return null;
     }
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen overflow-hidden">
-      {/* Sidebar com Stepper e conteúdo */}
-      <aside className="md:w-1/3 p-4 overflow-auto">
+    <div className="flex flex-col-reverse md:flex-row h-[600px] overflow-hidden border">
+      {/* Lateral com steps */}
+      <aside className="md:w-1/3 p-4 overflow-auto border-r">
         <Stepper currentStep={currentStep} steps={steps} />
-        <AnimatePresence exitBeforeEnter>
+        <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
             variants={variants}
             initial="initial"
             animate="enter"
             exit="exit"
-            style={{ position: "relative", width: "100%" }}
           >
-            {renderSidebarContent()}
+            {stepsContent()}
           </motion.div>
         </AnimatePresence>
       </aside>
-      {/* Mapa sempre visível */}
+
+      {/* Mapa */}
       <main className="md:w-2/3 relative">
-        <div id="map-container" className="w-full h-full" />
+        <Map onMapLoad={handleMapLoad} />
+
+        {/* Se houver overlap, mostra no canto */}
+        {overlapKm > 0 && (
+          <div className="absolute top-2 left-2 bg-gray-900 p-2 rounded shadow z-10">
+            <p className="text-sm font-semibold">
+              Km compartilhados: {overlapKm.toFixed(2)}
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );

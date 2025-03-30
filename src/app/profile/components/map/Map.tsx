@@ -1,4 +1,4 @@
-// src/app/profile/components/map/Map.tsx
+// Map.tsx
 import React, { FC, useEffect } from 'react';
 import { useMapbox } from '@/hooks/UseMapBox';
 import mapboxgl from 'mapbox-gl';

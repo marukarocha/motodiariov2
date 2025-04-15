@@ -1,4 +1,5 @@
 // src/hooks/useFuelingsSummary.ts
+
 export interface FuelingsSummaryData {
   totalCost: number;
   totalLiters: number;
@@ -44,13 +45,25 @@ export function useFuelingsSummary(
 
     if (lastFueling && lastFueling.currentMileage !== undefined) {
       const lastFuelingMileage = Number(lastFueling.currentMileage);
-      // Calcular quantos litros foram usados desde o abastecimento
+      const lastLitrosAbastecidos = Number(lastFueling.litros);
+
+      // Calcula quanto combustível foi usado desde o último abastecimento
       const fuelUsed = (lastOdometer - lastFuelingMileage) / config.averageConsumption;
-      fuelAvailable = config.tankVolume - fuelUsed;
+
+      // Calcula o que ainda resta no tanque
+      fuelAvailable = lastLitrosAbastecidos - fuelUsed;
       if (fuelAvailable < 0) fuelAvailable = 0;
+
       kilometersRemaining = fuelAvailable * config.averageConsumption;
     }
   }
 
-  return { totalCost, totalLiters, averageCostPerLiter, totalFuelings, fuelAvailable, kilometersRemaining };
+  return {
+    totalCost,
+    totalLiters,
+    averageCostPerLiter,
+    totalFuelings,
+    fuelAvailable,
+    kilometersRemaining,
+  };
 }

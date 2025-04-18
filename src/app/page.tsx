@@ -11,6 +11,7 @@ import { OverviewBike } from "@/app/bike/components/OverviewBike";
 import WelcomeModal from "@/components/WelcomeModal";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import { useAuth } from "@/components/USER/Auth/AuthContext"; // Importa useAuth
+import CalculadoraConsumo from '../components/CalcConsumo';
 
 export default function UserPage() {
   const { userData, earnings, error, loading } = useDashboardData();
@@ -77,6 +78,7 @@ export default function UserPage() {
                     Visão Geral da Moto
                   </h2>
                   <OverviewBike />
+                  <CalculadoraConsumo />
                 </div>
               </div>
               <Motivation className="mt-8" />

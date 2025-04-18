@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addOdometerRecord, getLastOdometerRecord,updateOdometerRecord  } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { FaCamera } from "react-icons/fa";
+import Link from 'next/link'
 
 interface OdometerUpdateModalProps {
   open: boolean;
@@ -100,7 +101,9 @@ export default function OdometerUpdateModal({ open, onClose }: OdometerUpdateMod
           <DialogTitle>Atualizar Odômetro</DialogTitle>
           <DialogDescription>Insira manualmente ou tire uma foto do painel.</DialogDescription>
         </DialogHeader>
-
+        <Link href="/odometer" className="inline-block text-white px-4 py-2 rounded hover:bg-blue-700">
+  Acessar Odometer
+</Link>
         {lastOdometer !== null && (
           <p className="text-gray-500">Último registro: <strong>{lastOdometer} km</strong></p>
         )}
@@ -119,9 +122,9 @@ export default function OdometerUpdateModal({ open, onClose }: OdometerUpdateMod
           <span>Capturar Foto</span>
           <input type="file" id="odometer-image" accept="image/*" className="hidden" onChange={handleImageUpload} />
         </label>
-
+        
         {/* Botão de salvar */}
-        <Button onClick={handleSave} disabled={loading}>
+        <Button className="bg-green-900" onClick={handleSave} disabled={loading}>
           {loading ? "Salvando..." : "Salvar"}
         </Button>
       </DialogContent>

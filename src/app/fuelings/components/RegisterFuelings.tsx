@@ -46,17 +46,17 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
   const [selectedFuel, setSelectedFuel] = useState<"Gasoline" | "Ethanol">("Gasoline");
   const [valorLitro, setValorLitro] = useState("");
 
-  // Campos do formulário
   const [litros, setLitros] = useState("");
   const [odometer, setOdometer] = useState("");
   const [postoName, setPostoName] = useState("");
 
-  // Toggle para exibir ou não data/hora custom
   const [useCustomDateTime, setUseCustomDateTime] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [hora, setHora] = useState("");
 
-  // Carrega os postos da API local (/api/postos)
+  // NOVO: marcação de tanque cheio manual
+  const [fullTank, setFullTank] = useState(false);
+
   useEffect(() => {
     async function fetchPostos() {
       try {
@@ -75,16 +75,15 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
     fetchPostos();
   }, [toast]);
 
-  // Atualiza o valor do combustível e o nome do posto ao selecionar
   useEffect(() => {
     if (selectedPostoId) {
       const posto = postos.find((p) => p.id === selectedPostoId);
       if (posto) {
-        if (selectedFuel === "Gasoline") {
-          setValorLitro(posto.fuelTypes.Gasoline.regular.price.toString());
-        } else {
-          setValorLitro(posto.fuelTypes.Ethanol.price.toString());
-        }
+        setValorLitro(
+          selectedFuel === "Gasoline"
+            ? posto.fuelTypes.Gasoline.regular.price.toString()
+            : posto.fuelTypes.Ethanol.price.toString()
+        );
         setPostoName(posto.name);
       }
     }
@@ -124,12 +123,9 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       return;
     }
 
-    let recordedAt: Date;
-    if (useCustomDateTime) {
-      recordedAt = new Date(`${selectedDate}T${hora || "00:00"}:00`);
-    } else {
-      recordedAt = new Date();
-    }
+    const recordedAt = useCustomDateTime
+      ? new Date(`${selectedDate}T${hora || "00:00"}:00`)
+      : new Date();
 
     const fuelingData = {
       date: Timestamp.fromDate(recordedAt),
@@ -137,6 +133,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       posto: postoName,
       valorLitro: valorLitroNumber,
       currentMileage: odometerNumber,
+      fullTank, // 👈 CAMPO NOVO: marca se este abastecimento encheu o tanque
     };
 
     try {
@@ -166,6 +163,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       setSelectedDate("");
       setHora("");
       setUseCustomDateTime(false);
+      setFullTank(false); // reset do checkbox
     } catch (error) {
       console.error("Erro ao salvar abastecimento:", error);
       toast({
@@ -181,6 +179,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
       <div className="grid grid-cols-2 gap-4">
         {/* Coluna 1 */}
         <div className="flex flex-col gap-4">
+          {/* Posto */}
           <div>
             <Label htmlFor="postoSelect">Posto:</Label>
             <select
@@ -198,6 +197,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
             </select>
           </div>
 
+          {/* Tipo de combustível */}
           <div>
             <Label htmlFor="fuelSelect">Combustível:</Label>
             <select
@@ -211,13 +211,14 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
             </select>
           </div>
 
+          {/* Valor por litro */}
           <div>
             <Label htmlFor="valorLitro">Valor por Litro (R$):</Label>
             <NumericFormat
               value={valorLitro}
               onValueChange={({ floatValue }) => setValorLitro(floatValue?.toString() || "")}
               decimalScale={2}
-              fixedDecimalScale={true}
+              fixedDecimalScale
               prefix="R$ "
               placeholder="Ex: 3,99"
               customInput={Input}
@@ -230,13 +231,14 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
 
         {/* Coluna 2 */}
         <div className="flex flex-col gap-4">
+          {/* Litros abastecidos */}
           <div>
             <Label htmlFor="litros">Litros:</Label>
             <NumericFormat
               value={litros}
               onValueChange={({ floatValue }) => setLitros(floatValue?.toString() || "")}
               decimalScale={1}
-              fixedDecimalScale={true}
+              fixedDecimalScale
               placeholder="Ex: 15,5"
               customInput={Input}
               className="w-full"
@@ -245,6 +247,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
             />
           </div>
 
+          {/* Odômetro */}
           <div>
             <Label htmlFor="odometer">Odômetro (km):</Label>
             <NumericFormat
@@ -254,23 +257,24 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
               placeholder="Ex: 12345"
               customInput={Input}
               className="w-full"
-              thousandSeparator=""
             />
           </div>
 
-          <div className="mt-7">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setUseCustomDateTime(!useCustomDateTime)}
-              className={useCustomDateTime ? "bg-blue-500 text-white" : ""}
-            >
-              {useCustomDateTime ? "Usar data/hora automática" : "Definir data/hora"}
-            </Button>
+          {/* Checkbox de tanque cheio */}
+          <div>
+            <Label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={fullTank}
+                onChange={() => setFullTank(!fullTank)}
+              />
+              Marcar como tanque cheio (reinicializa o sistema)
+            </Label>
           </div>
         </div>
       </div>
 
+      {/* Data/hora custom */}
       {useCustomDateTime && (
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
@@ -294,6 +298,7 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
         </div>
       )}
 
+      {/* Botão de envio */}
       <Button type="submit" className="bg-green-500 mt-6 w-full">
         Registrar Abastecimento
       </Button>

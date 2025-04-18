@@ -144,6 +144,3 @@ export function FuelingsSummary({ fuelings }: FuelingsSummaryProps) {
     </div>
   );
 }
-
-// Exporta apenas nomeado
-export { FuelingsSummary };

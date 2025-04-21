@@ -4,7 +4,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import OdometerUpdateModal from "./OdometerUpdateModal";
 
-export default function OdometerUpdateButton() {
+interface OdometerUpdateButtonProps {
+  onUpdated: () => void;
+}
+
+export default function OdometerUpdateButton({ onUpdated }: OdometerUpdateButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -12,7 +16,11 @@ export default function OdometerUpdateButton() {
       <Button variant="outline" onClick={() => setOpen(true)}>
         Atualizar Odômetro
       </Button>
-      <OdometerUpdateModal open={open} onClose={() => setOpen(false)} />
+      <OdometerUpdateModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onUpdated={onUpdated}
+      />
     </>
   );
 }

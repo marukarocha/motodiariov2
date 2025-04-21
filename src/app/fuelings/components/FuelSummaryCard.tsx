@@ -11,9 +11,10 @@ export interface FuelSummaryCardProps {
   fuelAvailable: number;
   tankVolume: number;
   kilometersRemaining: number;
+  onUpdated: () => void;
 }
 
-export const FuelSummaryCard = ({ fuelings, fuelAvailable, tankVolume, kilometersRemaining }: FuelSummaryCardProps) => {
+export const FuelSummaryCard = ({ fuelings, fuelAvailable, tankVolume, kilometersRemaining, onUpdated }: FuelSummaryCardProps) => {
   if (!fuelings || fuelings.length < 2) {
     return (
       <div className="p-4 border rounded">
@@ -38,7 +39,7 @@ export const FuelSummaryCard = ({ fuelings, fuelAvailable, tankVolume, kilometer
 
   return (
     <div className="p-1">
-      <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-4">
         <div className="flex justify-center">
           <GaugeComponent
             value={fuelAvailable}
@@ -83,10 +84,11 @@ export const FuelSummaryCard = ({ fuelings, fuelAvailable, tankVolume, kilometer
               {costPerKm > 0 ? `R$ ${costPerKm.toFixed(2)}` : 'N/A'}
             </span>
           </p>
+          <div className='mt-4'><OdometerUpdateButton onUpdated={onUpdated} /></div>
+
         </div>
 
         <div className="flex justify-center">
-          <OdometerUpdateButton />
         </div>
       </div>
     </div>

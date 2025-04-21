@@ -43,23 +43,30 @@ export function Overview({ earnings }: OverviewProps) {
   const { totalFuelings, fuelAvailable, kilometersRemaining } =
     useFuelingsSummary(fuelings, bikeConfig || undefined, lastOdometer);
 
-  const fetchData = useCallback(async () => {
-    if (currentUser && currentUser.uid) {
-      const uid = currentUser.uid;
-      try {
-        const earningsTotal = await calculateTotalEarnings(uid);
-        const kilometers = await calculateTotalKilometers(uid);
-        const hours = await calculateTotalHours(uid);
-        const fuelingsData = await getFuelings(uid);
-        setTotalEarnings(earningsTotal);
-        setTotalKilometers(kilometers);
-        setTotalHours(hours);
-        setFuelings(fuelingsData);
-      } catch (error) {
-        console.error("Overview: fetchData - Erro ao buscar dados:", error);
+    const fetchData = useCallback(async () => {
+      if (currentUser && currentUser.uid) {
+        const uid = currentUser.uid;
+        try {
+          const earningsTotal = await calculateTotalEarnings(uid);
+          const kilometers = await calculateTotalKilometers(uid);
+          const hours = await calculateTotalHours(uid);
+          const fuelingsData = await getFuelings(uid);
+          const lastRecord = await getLastOdometerRecord(uid);
+    
+          setTotalEarnings(earningsTotal);
+          setTotalKilometers(kilometers);
+          setTotalHours(hours);
+          setFuelings(fuelingsData);
+          if (lastRecord) {
+            setLastOdometer(lastRecord.currentMileage);
+          }
+    
+        } catch (error) {
+          console.error("Overview: fetchData - Erro ao buscar dados:", error);
+        }
       }
-    }
-  }, [currentUser]);
+    }, [currentUser]);
+    
 
   useEffect(() => {
     fetchData();
@@ -107,6 +114,7 @@ export function Overview({ earnings }: OverviewProps) {
               fuelAvailable={fuelAvailable}
               tankVolume={bikeConfig.tankVolume}
               kilometersRemaining={kilometersRemaining}
+              onUpdated={fetchData}
             />
           </div>
         </Card>

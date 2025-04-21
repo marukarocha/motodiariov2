@@ -69,28 +69,33 @@ const ConsumptionCalculator: React.FC<ConsumptionCalculatorProps> = ({
   const totalCostPerKm = fuelCostPerKm + oilCostPerKm + maintenanceCostPerKm;
 
   return (
-    <div>
-      <h3>Consumo e Custos</h3>
-      <ul>
-        <li>
-          <strong>Custo por km (combustível):</strong> R$ {fuelCostPerKm.toFixed(2)}
+    <div className="space-y-6">
+      <ul className="grid grid-cols-1 sm:grid-cols-1 gap-2">
+        <li className="flex items-center">
+          <strong className="mr-2 text-lg">Custo por km (combustível):</strong>
+          <span className="inline-block bg-blue-500 text-white text-sm font-semibold rounded-full px-4 py-1">{`R$ ${fuelCostPerKm.toFixed(2)}`}</span>
         </li>
-        <li>
-          <strong>Autonomia com tanque cheio:</strong> {autonomy.toFixed(0)} km
+        <li className="flex items-center">
+          <strong className="mr-2 text-lg">Autonomia com tanque cheio:</strong>
+          <span className="inline-block bg-teal-500 text-white text-sm font-semibold rounded-full px-4 py-1">{`${autonomy.toFixed(0)} km`}</span>
         </li>
         {tripDistance !== undefined && (
-          <li>
-            <strong>Custo para uma corrida de {tripDistance} km:</strong> R$ {tripCost?.toFixed(2)}
+          <li className="flex items-center">
+            <strong className="mr-2 text-lg">Custo para uma corrida de {tripDistance} km:</strong>
+            <span className="inline-block bg-yellow-500 text-white text-sm font-semibold rounded-full px-4 py-1">{`R$ ${tripCost?.toFixed(2)}`}</span>
           </li>
         )}
-        <li>
-          <strong>Custo por km (óleo):</strong> R$ {oilCostPerKm.toFixed(2)}
+        <li className="flex items-center">
+          <strong className="mr-2 text-lg">Custo por km (óleo):</strong>
+          <span className="inline-block bg-gray-500 text-white text-sm font-semibold rounded-full px-4 py-1">{`R$ ${oilCostPerKm.toFixed(2)}`}</span>
         </li>
-        <li>
-          <strong>Custo por km (manutenção):</strong> R$ {maintenanceCostPerKm.toFixed(2)}
+        <li className="flex items-center">
+          <strong className="mr-2 text-lg">Custo por km (manutenção):</strong>
+          <span className="inline-block bg-indigo-500 text-white text-sm font-semibold rounded-full px-4 py-1">{`R$ ${maintenanceCostPerKm.toFixed(2)}`}</span>
         </li>
-        <li>
-          <strong>Custo total por km:</strong> R$ {totalCostPerKm.toFixed(2)}
+        <li className="flex items-center">
+          <strong className="mr-2 text-lg">Custo total por km:</strong>
+          <span className="inline-block bg-red-500 text-white text-sm font-semibold rounded-full px-4 py-1">{`R$ ${totalCostPerKm.toFixed(2)}`}</span>
         </li>
       </ul>
     </div>

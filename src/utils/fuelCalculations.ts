@@ -59,29 +59,33 @@ export const calculateMaintenanceCostPerKm = (
  *
  * Retorna 0 se não houver registros suficientes ou se algum valor for inválido.
  */
-export const calculateAverageConsumptionFromFuelings = (fuelings: Fueling[], n: number = 4): number => {
+export function calculateAverageConsumptionFromFuelings(
+  fuelings: Fueling[],
+  limit: number
+): number {
   if (fuelings.length < 2) return 0;
 
-  // Ordena os registros por data (crescente)
-  const sortedFuelings = [...fuelings].sort(
-    (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()
-  );
-  // Seleciona os últimos n registros
-  const recentFuelings = sortedFuelings.slice(-n);
+  const filtered = [...fuelings]
+    .filter((f) => f.fullTank && f.currentMileage !== undefined)
+    .slice(-limit);
 
-  // Verifica se todos os registros possuem currentMileage e litros válidos
-  if (!recentFuelings.every(f => safeNumber(f.currentMileage) > 0 && safeNumber(f.litros) > 0)) {
-    return 0;
-  }
+  // fallback se não houver suficientes com tanque cheio
+  const toCalculate =
+    filtered.length >= 2
+      ? filtered
+      : [...fuelings]
+          .filter((f) => f.currentMileage !== undefined)
+          .slice(-limit);
 
-  let totalDistance = 0;
-  let totalLiters = 0;
-  for (let i = 1; i < recentFuelings.length; i++) {
-    const prev = recentFuelings[i - 1];
-    const curr = recentFuelings[i];
-    const distance = safeNumber(curr.currentMileage) - safeNumber(prev.currentMileage);
-    totalDistance += distance;
-    totalLiters += safeNumber(curr.litros);
-  }
-  return totalLiters > 0 ? totalDistance / totalLiters : 0;
+  if (toCalculate.length < 2) return 0;
+
+  const first = toCalculate[0];
+  const last = toCalculate[toCalculate.length - 1];
+
+  const kmTraveled = Number(last.currentMileage) - Number(first.currentMileage);
+  const totalLiters = toCalculate
+    .slice(0, toCalculate.length - 1)
+    .reduce((sum, f) => sum + Number(f.litros), 0);
+
+  return totalLiters > 0 ? kmTraveled / totalLiters : 0;
 };

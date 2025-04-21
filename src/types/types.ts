@@ -15,6 +15,7 @@ export interface Fueling extends DataItem {
   posto: string;  // Valor cobrado por litro
   valorLitro: number;
   currentMileage: number;  // Adicionado para armazenar a leitura do odômetro
+  fullTank: boolean;
 }
 
 // Interface para ganhos (earnings)

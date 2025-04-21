@@ -30,7 +30,7 @@ export default function RootLayout({
               <SwipeableLayout>
                 {children}
                 <Toaster />
-              </SwipeableLayout>
+             </SwipeableLayout>
             </ConditionalLayout>
           </AuthProvider>
         </ThemeProvider>

@@ -9,7 +9,6 @@ import { useFuelingsSummary } from '@/hooks/useFuelingsSummary';
 import { useAuth } from '@/components/USER/Auth/AuthContext';
 import { getBikeData, getLastOdometerRecord } from '@/lib/db/firebaseServices';
 import { useToast } from '@/hooks/use-toast';
-import FuelSummaryCard from './FuelSummaryCard';
 import { Fueling } from '@/types/types';
 
 interface FuelingsSummaryProps {
@@ -65,25 +64,7 @@ export function FuelingsSummary({ fuelings }: FuelingsSummaryProps) {
 
   return (
     <div className="space-y-4">
-      {/* Combustível Disponível */}
-      <Card>
-        <CardHeader className="flex items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Combustível Disponível</CardTitle>
-          <Battery className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {bikeConfig != null && lastOdometer != null ? (
-            <FuelSummaryCard
-              fuelings={fuelings}
-              fuelAvailable={fuelAvailable}
-              tankVolume={bikeConfig.tankVolume}
-              kilometersRemaining={kilometersRemaining}
-            />
-          ) : (
-            <div className="text-center py-4">Carregando...</div>
-          )}
-        </CardContent>
-      </Card>
+     
 
       {/* Grid de métricas */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

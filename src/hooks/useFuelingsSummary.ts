@@ -10,8 +10,9 @@ export interface FuelingsSummaryData {
 }
 
 /**
- * Calcula resumo de abastecimentos,
- * usando fullTank como base para precisão.
+ * Calcula o resumo de abastecimentos considerando:
+ * - litros acumulados desde o último fullTank
+ * - se o fullTank não for encontrado, começa do primeiro registro
  */
 export function useFuelingsSummary(
   fuelings: {
@@ -34,29 +35,47 @@ export function useFuelingsSummary(
   let fuelAvailable = 0;
   let kilometersRemaining = 0;
 
-  if (config && lastOdometer && fuelings.length > 0) {
+  if (config && typeof lastOdometer === "number" && fuelings.length > 0) {
+    // Filtra e ordena por odômetro crescente
     const sorted = [...fuelings]
       .filter(f => f.currentMileage !== undefined)
       .sort((a, b) => Number(a.currentMileage) - Number(b.currentMileage));
 
-    const fullTanks = sorted.filter(f => f.fullTank);
-    const reference = fullTanks.length > 0
-      ? fullTanks[fullTanks.length - 1]
-      : sorted[sorted.length - 1];
-
-    if (reference && reference.currentMileage !== undefined) {
-      const kmSince = lastOdometer - Number(reference.currentMileage);
-      const averageConsumption = config.averageConsumption;
-      const usedLiters = kmSince / averageConsumption;
-
-      const initialLiters = reference.fullTank
-        ? config.tankVolume
-        : Number(reference.litros);
-
-      fuelAvailable = initialLiters - usedLiters;
-      fuelAvailable = Math.max(0, Math.min(fuelAvailable, config.tankVolume));
-      kilometersRemaining = fuelAvailable * averageConsumption;
+    // Busca o último abastecimento com tanque cheio
+    let referenceIndex = -1;
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      if (sorted[i].fullTank) {
+        referenceIndex = i;
+        break;
+      }
     }
+
+    let baseMileage = 0;
+    let initialLiters = 0;
+
+    if (referenceIndex >= 0) {
+      // Último tanque cheio como referência
+      const ref = sorted[referenceIndex];
+      baseMileage = Number(ref.currentMileage);
+      initialLiters = config.tankVolume;
+
+      // Soma todos os litros após o tanque cheio
+      const after = sorted.slice(referenceIndex + 1);
+      const sumLitros = after.reduce((acc, f) => acc + Number(f.litros), 0);
+      initialLiters += sumLitros;
+    } else {
+      // Nenhum tanque cheio: usa o primeiro abastecimento como base
+      const ref = sorted[0];
+      baseMileage = Number(ref.currentMileage);
+      initialLiters = sorted.reduce((acc, f) => acc + Number(f.litros), 0);
+    }
+
+    const kmPercorridos = lastOdometer - baseMileage;
+    const litrosUsados = kmPercorridos / config.averageConsumption;
+
+    fuelAvailable = initialLiters - litrosUsados;
+    fuelAvailable = Math.max(0, Math.min(fuelAvailable, config.tankVolume));
+    kilometersRemaining = fuelAvailable * config.averageConsumption;
   }
 
   return {

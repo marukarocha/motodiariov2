@@ -110,6 +110,10 @@ export default function FuelingsPage() {
 
       
 
+      <div className="mt-6">
+        <FuelingsSummary fuelings={fuelingsData} />
+      </div>
+       
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Lista de Abastecimentos</CardTitle>

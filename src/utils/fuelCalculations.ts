@@ -3,19 +3,20 @@
 import { Fueling } from "@/types/types";
 
 /**
- * Função auxiliar que converte um valor para número.
- * Se o valor não for numérico ou for NaN, retorna 0.
+ * Converte qualquer valor em número seguro (NaN -> 0).
  */
-const safeNumber = (value: any): number => {
-  const num = Number(value);
-  return isNaN(num) ? 0 : num;
+const safeNum = (value: any): number => {
+  const n = Number(value);
+  return isNaN(n) ? 0 : n;
 };
 
 /**
  * Calcula o custo por km considerando o valor do litro e o consumo médio.
  */
-export const calculateCostPerKm = (valorLitro: number, consumoMedio: number): number =>
-  safeNumber(valorLitro) / safeNumber(consumoMedio);
+export const calculateCostPerKm = (
+  valorLitro: number,
+  consumoMedio: number
+): number => safeNum(valorLitro) / safeNum(consumoMedio);
 
 /**
  * Calcula o custo de uma corrida de uma dada distância.
@@ -32,7 +33,7 @@ export const calculateTripCost = (
 export const calculateAutonomy = (
   consumoMedio: number,
   tanqueCapacity: number
-): number => safeNumber(consumoMedio) * safeNumber(tanqueCapacity);
+): number => safeNum(consumoMedio) * safeNum(tanqueCapacity);
 
 /**
  * Calcula o custo por km relacionado à troca de óleo.
@@ -40,7 +41,7 @@ export const calculateAutonomy = (
 export const calculateOilCostPerKm = (
   oilChangeCost: number,
   oilChangeInterval: number
-): number => safeNumber(oilChangeCost) / safeNumber(oilChangeInterval);
+): number => safeNum(oilChangeCost) / safeNum(oilChangeInterval);
 
 /**
  * Calcula o custo de manutenção por km.
@@ -48,16 +49,11 @@ export const calculateOilCostPerKm = (
 export const calculateMaintenanceCostPerKm = (
   maintenanceCost: number,
   estimatedMonthlyKm: number
-): number => safeNumber(maintenanceCost) / safeNumber(estimatedMonthlyKm);
+): number => safeNum(maintenanceCost) / safeNum(estimatedMonthlyKm);
 
 /**
- * Calcula a média de consumo (km/l) usando os últimos n registros de abastecimento.
- * Assume que cada registro possui:
- *   - currentMileage: número
- *   - litros: número
- *   - data: string que representa a data (por exemplo, "2025-03-19")
- *
- * Retorna 0 se não houver registros suficientes ou se algum valor for inválido.
+ * Calcula a média de consumo (km/l) entre os dois últimos eventos fullTank.
+ * Se houver menos de 2 fullTank, usa os dois registros mais recentes.
  */
 export function calculateAverageConsumptionFromFuelings(
   fuelings: Fueling[],
@@ -65,27 +61,42 @@ export function calculateAverageConsumptionFromFuelings(
 ): number {
   if (fuelings.length < 2) return 0;
 
-  const filtered = [...fuelings]
-    .filter((f) => f.fullTank && f.currentMileage !== undefined)
-    .slice(-limit);
+  // 1) Ordena por odômetro crescente
+  const sorted = [...fuelings]
+    .filter(f => f.currentMileage !== undefined && f.litros !== undefined)
+    .sort((a, b) => safeNum(a.currentMileage) - safeNum(b.currentMileage));
 
-  // fallback se não houver suficientes com tanque cheio
-  const toCalculate =
-    filtered.length >= 2
-      ? filtered
-      : [...fuelings]
-          .filter((f) => f.currentMileage !== undefined)
-          .slice(-limit);
+  // 2) Encontra índices dos dois últimos fullTank
+  const fullIndices: number[] = [];
+  sorted.forEach((f, i) => {
+    if (f.fullTank) fullIndices.push(i);
+  });
 
-  if (toCalculate.length < 2) return 0;
+  let startIdx: number, endIdx: number;
 
-  const first = toCalculate[0];
-  const last = toCalculate[toCalculate.length - 1];
+  if (fullIndices.length >= 2) {
+    // pega os dois últimos
+    endIdx = fullIndices.pop()!;
+    startIdx = fullIndices.pop()!;
+  } else {
+    // fallback: usa os dois últimos registros quaisquer
+    endIdx = sorted.length - 1;
+    startIdx = Math.max(0, sorted.length - 2);
+  }
 
-  const kmTraveled = Number(last.currentMileage) - Number(first.currentMileage);
-  const totalLiters = toCalculate
-    .slice(0, toCalculate.length - 1)
-    .reduce((sum, f) => sum + Number(f.litros), 0);
+  const start = sorted[startIdx]!;
+  const end = sorted[endIdx]!;
 
-  return totalLiters > 0 ? kmTraveled / totalLiters : 0;
-};
+  const kmTraveled = safeNum(end.currentMileage) - safeNum(start.currentMileage);
+  if (kmTraveled <= 0) return 0;
+
+  // 3) Soma todos os litros abastecidos entre startIdx (exclusive) e endIdx (inclusive)
+  let litersSum = 0;
+  for (let i = startIdx + 1; i <= endIdx; i++) {
+    litersSum += safeNum(sorted[i].litros);
+  }
+  if (litersSum <= 0) return 0;
+
+  // 4) Consumo médio
+  return kmTraveled / litersSum;
+}

@@ -89,12 +89,11 @@ export default function OdometerUpdateModal({ open, onClose, onUpdated }: Odomet
         {lastOdometer !== null && (
           <p className="text-gray-500">Último registro: <strong>{lastOdometer} km</strong></p>
         )}
-
         <Input
-          type="text"
+          type="number"
           placeholder="Digite o odômetro"
           value={odometer}
-          onChange={(e) => setOdometer(e.target.value.replace(/\D/g, ""))}
+          onChange={(e) => setOdometer(e.target.value)}
         />
 
         <label htmlFor="odometer-image" className="flex items-center gap-2 cursor-pointer p-2 rounded">

@@ -1,16 +1,14 @@
-// components/GerenciadorCorridas.tsx
-import { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid'; // Você precisará instalar esta dependência: npm install uuid @types/uuid
+import { useState, useCallback, useMemo } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Definição dos tipos
 interface Corrida {
   id: string;
   cliente: string;
@@ -22,17 +20,31 @@ interface Corrida {
   dataConclusao?: Date;
 }
 
+type FormField = {
+  id: string;
+  label: string;
+  type: string;
+  step?: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const STATUS_BADGES = {
+  pendente: <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pendente</Badge>,
+  em_andamento: <Badge variant="outline" className="bg-blue-100 text-blue-800">Em andamento</Badge>,
+  concluida: <Badge variant="outline" className="bg-green-100 text-green-800">Concluída</Badge>,
+  cancelada: <Badge variant="outline" className="bg-red-100 text-red-800">Cancelada</Badge>
+};
+    
 export default function GerenciadorCorridas() {
-  // Estados
   const [corridas, setCorridas] = useState<Corrida[]>([]);
   const [cliente, setCliente] = useState<string>('');
   const [endereco, setEndereco] = useState<string>('');
   const [valor, setValor] = useState<string>('');
   const [distancia, setDistancia] = useState<string>('');
   const [filtroStatus, setFiltroStatus] = useState<string>('todas');
-  
-  // Adicionar nova corrida
-  const adicionarCorrida = (e: React.FormEvent) => {
+
+  const adicionarCorrida = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     
     const novaCorrida: Corrida = {
@@ -44,26 +56,22 @@ export default function GerenciadorCorridas() {
       distancia: parseFloat(distancia),
       dataCriacao: new Date()
     };
-    
-    setCorridas([...corridas, novaCorrida]);
-    
-    // Limpar o formulário
+  
+    setCorridas(prevCorridas => [...prevCorridas, novaCorrida]);
+
     setCliente('');
     setEndereco('');
     setValor('');
     setDistancia('');
-  };
-  
-  // Alterar status da corrida
-  const alterarStatus = (id: string, novoStatus: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada') => {
-    setCorridas(corridas.map(corrida => {
+  }, [cliente, endereco, valor, distancia]);
+  const alterarStatus = useCallback((id: string, novoStatus: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada') => {
+    setCorridas(prevCorridas => prevCorridas.map(corrida => {
       if (corrida.id === id) {
         const corridaAtualizada = { 
           ...corrida, 
           status: novoStatus 
         };
         
-        // Se a corrida foi concluída, registra a data de conclusão
         if (novoStatus === 'concluida') {
           corridaAtualizada.dataConclusao = new Date();
         }
@@ -72,38 +80,83 @@ export default function GerenciadorCorridas() {
       }
       return corrida;
     }));
-  };
-  
-  // Filtrar corridas por status
-  const corridasFiltradas = filtroStatus === 'todas' 
+  }, []);
+
+  const formFields: FormField[][] = useMemo(() => [
+    [
+      {
+        id: "cliente",
+        label: "Cliente",
+        type: "text",
+        value: cliente,
+        onChange: setCliente
+      },
+      {
+        id: "endereco",
+        label: "Endereço",
+        type: "text",
+        value: endereco,
+        onChange: setEndereco
+      }
+    ],
+    [
+      {
+        id: "valor",
+        label: "Valor (R$)",
+        type: "number",
+        step: "0.01",
+        value: valor,
+        onChange: setValor
+      },
+      {
+        id: "distancia",
+        label: "Distância (km)",
+        type: "number",
+        step: "0.1",
+        value: distancia,
+        onChange: setDistancia
+      }
+    ]
+  ], [cliente, endereco, valor, distancia]);
+
+  const corridasFiltradas = useMemo(() =>
+    filtroStatus === 'todas'
     ? corridas 
-    : corridas.filter(corrida => corrida.status === filtroStatus);
-  
-  // Estatísticas
-  const totalCorridas = corridas.length;
-  const corridasConcluidas = corridas.filter(c => c.status === 'concluida').length;
-  const valorTotal = corridas
-    .filter(c => c.status === 'concluida')
-    .reduce((acc, curr) => acc + curr.valor, 0);
-  const distanciaTotal = corridas
-    .filter(c => c.status === 'concluida')
-    .reduce((acc, curr) => acc + curr.distancia, 0);
-  
-  // Badges para os status
+      : corridas.filter(corrida => corrida.status === filtroStatus),
+    [corridas, filtroStatus]
+  );
+
+  const estatisticas = useMemo(() => {
+    const corridasConcluidas = corridas.filter(c => c.status === 'concluida');
+    return {
+      totalCorridas: corridas.length,
+      corridasConcluidas: corridasConcluidas.length,
+      valorTotal: corridasConcluidas.reduce((acc, curr) => acc + curr.valor, 0),
+      distanciaTotal: corridasConcluidas.reduce((acc, curr) => acc + curr.distancia, 0)
+    };
+  }, [corridas]);
+
   const renderStatusBadge = (status: string) => {
-    switch(status) {
-      case 'pendente':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
-      case 'em_andamento':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em andamento</Badge>;
-      case 'concluida':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Concluída</Badge>;
-      case 'cancelada':
-        return <Badge variant="outline" className="bg-red-100 text-red-800">Cancelada</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
+    return STATUS_BADGES[status as keyof typeof STATUS_BADGES] || <Badge>{status}</Badge>;
   };
+
+  const FormFields = ({ fields }: { fields: FormField[] }) => (
+    <div className="grid grid-cols-2 gap-4">
+      {fields.map((field) => (
+        <div key={field.id} className="space-y-2">
+          <Label htmlFor={field.id}>{field.label}</Label>
+          <Input
+            id={field.id}
+            type={field.type}
+            step={field.step}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            required
+          />
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -113,54 +166,10 @@ export default function GerenciadorCorridas() {
         </CardHeader>
         <CardContent>
           <form onSubmit={adicionarCorrida} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cliente">Cliente</Label>
-                <Input
-                  id="cliente"
-                  value={cliente}
-                  onChange={(e) => setCliente(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="endereco">Endereço</Label>
-                <Input
-                  id="endereco"
-                  value={endereco}
-                  onChange={(e) => setEndereco(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="valor">Valor (R$)</Label>
-                <Input
-                  id="valor"
-                  type="number"
-                  step="0.01"
-                  value={valor}
-                  onChange={(e) => setValor(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="distancia">Distância (km)</Label>
-                <Input
-                  id="distancia"
-                  type="number"
-                  step="0.1"
-                  value={distancia}
-                  onChange={(e) => setDistancia(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            
+            {formFields.map((fieldGroup, index) => (
+              <FormFields key={index} fields={fieldGroup} />
+            ))}
+
             <Button type="submit" className="w-full">
               Adicionar Corrida
             </Button>
@@ -219,8 +228,8 @@ export default function GerenciadorCorridas() {
                           <TableCell>
                             <div className="flex gap-2">
                               {corrida.status === 'pendente' && (
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   variant="outline"
                                   onClick={() => alterarStatus(corrida.id, 'em_andamento')}
                                 >
@@ -229,8 +238,8 @@ export default function GerenciadorCorridas() {
                               )}
                               
                               {corrida.status === 'em_andamento' && (
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   variant="outline"
                                   onClick={() => alterarStatus(corrida.id, 'concluida')}
                                 >
@@ -239,8 +248,8 @@ export default function GerenciadorCorridas() {
                               )}
                               
                               {(corrida.status === 'pendente' || corrida.status === 'em_andamento') && (
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   variant="outline"
                                   className="text-red-600"
                                   onClick={() => alterarStatus(corrida.id, 'cancelada')}
@@ -264,38 +273,26 @@ export default function GerenciadorCorridas() {
             
             <TabsContent value="estatisticas">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">{totalCorridas}</div>
-                    <p className="text-sm text-gray-500">Total de Corridas</p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">{corridasConcluidas}</div>
-                    <p className="text-sm text-gray-500">Corridas Concluídas</p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">R$ {valorTotal.toFixed(2)}</div>
-                    <p className="text-sm text-gray-500">Valor Total</p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">{distanciaTotal.toFixed(1)} km</div>
-                    <p className="text-sm text-gray-500">Distância Total</p>
-                  </CardContent>
-                </Card>
+                <StatisticCard label="Total de Corridas" value={estatisticas.totalCorridas.toString()} />
+                <StatisticCard label="Corridas Concluídas" value={estatisticas.corridasConcluidas.toString()} />
+                <StatisticCard label="Valor Total" value={`R$ ${estatisticas.valorTotal.toFixed(2)}`} />
+                <StatisticCard label="Distância Total" value={`${estatisticas.distanciaTotal.toFixed(1)} km`} />
               </div>
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function StatisticCard({ label, value }: { label: string, value: string }) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="text-2xl font-bold">{value}</div>
+        <p className="text-sm text-gray-500">{label}</p>
+      </CardContent>
+    </Card>
   );
 }

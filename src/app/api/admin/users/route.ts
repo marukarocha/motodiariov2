@@ -1,62 +1,35 @@
 // app/api/admin/users/route.ts
+
 import { NextResponse } from "next/server";
-import admin from "firebase-admin";
-
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK || "{}");
-
-// Corrige as quebras de linha na chave privada
-if (serviceAccount.private_key) {
-  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
-}
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
-  });
-}
+import { adminDb } from "@/lib/db/firebaseAdmin"; // assume que já tem o Firestore inicializado
 
 export async function GET() {
   try {
-    const usersSnapshot = await admin.firestore().collection("users").get();
-
+    const usersSnapshot = await adminDb.collection("users").get();
     const users: any[] = [];
 
-    for (const docSnap of usersSnapshot.docs) {
-      const userId = docSnap.id;
-      const userDocData = docSnap.data();
+    for (const doc of usersSnapshot.docs) {
+      const userId = doc.id;
+      const userData = doc.data();
 
-      const userConfigRef = admin
-        .firestore()
-        .collection("users")
-        .doc(userId)
-        .collection("configurations")
-        .doc("user");
-
-      const userConfigSnap = await userConfigRef.get();
-      let userConfigData = {};
-      if (userConfigSnap.exists) {
-        userConfigData = userConfigSnap.data() || {};
-      }
-
-      const bikeConfigRef = admin
-        .firestore()
-        .collection("users")
-        .doc(userId)
-        .collection("configurations")
-        .doc("bike");
-
-      const bikeConfigSnap = await bikeConfigRef.get();
-      let bikeConfigData = {};
-      if (bikeConfigSnap.exists) {
-        bikeConfigData = bikeConfigSnap.data() || {};
+      // Tenta buscar as configurações do usuário
+      let configData: any = {};
+      try {
+        const configSnap = await adminDb
+          .collection("users")
+          .doc(userId)
+          .collection("configurations")
+          .doc("user")
+          .get();
+        configData = configSnap.exists ? configSnap.data() : {};
+      } catch (e) {
+        console.warn(`Usuário ${userId} sem configurações.`);
       }
 
       users.push({
         id: userId,
-        ...userDocData,
-        ...userConfigData,
-        bike: bikeConfigData,
+        ...configData,
+        ...userData, // sobrepõe config caso existam duplicações
       });
     }
 

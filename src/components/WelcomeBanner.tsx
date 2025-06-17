@@ -1,8 +1,11 @@
+// components/WelcomeBanner.tsx
+
 "use client";
 
 import React from "react";
 import Link from "next/link";
 import { Heart, CheckCircle } from "lucide-react";
+import UserRoleBadge from "@/app/profile/components/UserroleBadge";
 
 interface WelcomeBannerProps {
   displayName: string;
@@ -11,7 +14,8 @@ interface WelcomeBannerProps {
   emergencyPhone?: string;
   isVerified?: boolean;
   badges?: string[];
-  profileId?: string; // prop opcional para link público
+  role?: string;
+  profileId?: string;
 }
 
 export default function WelcomeBanner({
@@ -20,12 +24,13 @@ export default function WelcomeBanner({
   bloodType,
   emergencyPhone,
   isVerified = true,
-  badges = ["cachorro-Loko", "+1k entregas"],
+  badges = [],
+  role = "user",
   profileId,
 }: WelcomeBannerProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Área de boas-vindas: avatar e mensagem */}
+      {/* Área de boas-vindas */}
       <div className="md:col-span-2 flex items-center space-x-4">
         <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
           <img
@@ -41,7 +46,8 @@ export default function WelcomeBanner({
               <CheckCircle className="h-5 w-5 text-blue-500" title="Verificado" />
             )}
           </h1>
-          <div className="flex flex-wrap gap-2 mt-1">
+          <div className="flex flex-wrap gap-2 mt-1 items-center">
+            <UserRoleBadge role={role} />
             {badges.map((badge, index) => (
               <span
                 key={index}
@@ -54,7 +60,6 @@ export default function WelcomeBanner({
           <p className="text-muted-foreground mt-2">
             Bem-vindo de volta! Acompanhe as últimas informações do seu dia.
           </p>
-          {/* Se profileId estiver disponível, exibe o link para o perfil público */}
           {profileId && (
             <Link
               href={`/profile/${profileId}`}
@@ -65,29 +70,20 @@ export default function WelcomeBanner({
           )}
         </div>
       </div>
+
       {/* Card de emergência */}
       <div className="flex items-center justify-center p-4 border border-red-500 rounded-lg">
         <div className="flex items-center space-x-3">
           <Heart className="h-8 w-8 text-red-500" />
           <div className="text-sm">
-            {bloodType ? (
-              <p>
-                <strong>Tipo Sanguíneo:</strong> {bloodType}
-              </p>
-            ) : (
-              <p>
-                <strong>Tipo Sanguíneo:</strong> Não cadastrado
-              </p>
-            )}
-            {emergencyPhone ? (
-              <p>
-                <strong>Tel. Emergência:</strong> {emergencyPhone}
-              </p>
-            ) : (
-              <p>
-                <strong>Tel. Emergência:</strong> Não cadastrado
-              </p>
-            )}
+            <p>
+              <strong>Tipo Sanguíneo:</strong>{" "}
+              {bloodType || "Não cadastrado"}
+            </p>
+            <p>
+              <strong>Tel. Emergência:</strong>{" "}
+              {emergencyPhone || "Não cadastrado"}
+            </p>
           </div>
         </div>
       </div>

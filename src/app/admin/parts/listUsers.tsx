@@ -1,7 +1,8 @@
+// app/admin/parts/listUsers.tsx
+
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { User } from "lucide-react";
 
 interface UserData {
   id: string;
@@ -9,60 +10,72 @@ interface UserData {
   lastName: string;
   email: string;
   role: string;
-  nickname?: string;
-  useNickname?: boolean;
-  bloodType?: string;
-  emergencyPhone?: string;
 }
 
 export default function ListUsers() {
   const [users, setUsers] = useState<UserData[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function fetchUsers() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/admin/users");
-        if (!res.ok) {
-          throw new Error("Erro ao buscar usuários");
-        }
-        const data = await res.json();
-        setUsers(data.users);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchUsers();
   }, []);
+
+  async function fetchUsers() {
+    setLoading(true);
+    const res = await fetch("/api/admin/users");
+    const data = await res.json();
+    setUsers(data.users);
+    setLoading(false);
+  }
+
+  async function updateRole(userId: string, newRole: string) {
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: newRole }),
+    });
+    if (res.ok) {
+      fetchUsers();
+    } else {
+      alert("Erro ao atualizar role");
+    }
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Listagem de Usuários</h1>
-      {loading && <p>Carregando...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-      {!loading && !error && (
-        <table className="min-w-full border">
+      {loading ? (
+        <p>Carregando...</p>
+      ) : (
+        <table className="min-w-full border text-white">
           <thead>
-            <tr className="bg-gray-800 text-white">
+            <tr className="bg-gray-800">
               <th className="border p-2">ID</th>
               <th className="border p-2">Nome</th>
               <th className="border p-2">Email</th>
-              <th className="border p-2">Role</th>
+              <th className="border p-2">Perfil</th>
+              <th className="border p-2">Ação</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.id} className="text-gray-200">
+              <tr key={user.id} className="bg-gray-900">
                 <td className="border p-2">{user.id}</td>
-                <td className="border p-2">
-                  {user.firstName} {user.lastName}
-                </td>
+                <td className="border p-2">{user.firstName} {user.lastName}</td>
                 <td className="border p-2">{user.email}</td>
-                <td className="border p-2">{user.role}</td>
+                <td className="border p-2 capitalize">{user.role}</td>
+                <td className="border p-2">
+                  <select
+                    value={user.role}
+                    onChange={(e) => updateRole(user.id, e.target.value)}
+                    className="bg-gray-800 text-white p-1 rounded"
+                  >
+                    <option value="usuario">Usuário</option>
+                    <option value="pago">Usuário Pago</option>
+                    <option value="gerente">Gerente</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </td>
               </tr>
             ))}
           </tbody>

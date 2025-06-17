@@ -17,7 +17,7 @@ export async function uploadProfileImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", UPLOAD_PRESET); // Obtido do .env.local
-  formData.append("folder", "user_profiles"); // Pasta no Cloudinary
+  formData.append("folder", "users/avatars"); // ou qualquer nome que preferir
 
   try {
     const response = await axios.post(

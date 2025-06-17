@@ -13,7 +13,7 @@ const postos = [
           price: 6.50
         },
         premium: {
-          price: 7.00
+          price: 6.52
         }
       },
       Ethanol: {
@@ -31,10 +31,10 @@ const postos = [
     fuelTypes: {
       Gasoline: {
         regular: {
-          price: 5.79
+          price: 6.69
         },
         premium: {
-          price: 6.20
+          price: 6.89
         }
       },
       Ethanol: {

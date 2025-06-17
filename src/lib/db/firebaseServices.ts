@@ -186,6 +186,20 @@ export async function getMaintenance(userId: string): Promise<Record<string, unk
   return maintenance;
 }
 
+export async function updateMaintenance(
+  userId: string,
+  maintenanceId: string,
+  updatedData: { [key: string]: any }
+): Promise<void> {
+  try {
+    const maintenanceRef = doc(db, "users", userId, "manutencoes", maintenanceId);
+    await updateDoc(maintenanceRef, updatedData);
+  } catch (error) {
+    console.error("Erro ao atualizar manutenção:", error);
+    throw error;
+  }
+}
+
 export async function deleteMaintenance(userId: string, maintenanceId: string): Promise<void> {
   try {
     const maintenanceRef = doc(db, "users", userId, "manutencoes", maintenanceId);

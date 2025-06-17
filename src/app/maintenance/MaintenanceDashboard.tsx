@@ -1,69 +1,77 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import RegisterManutencaoForm from "./RegisterManutencaoForm";
-import { iconsMap } from "@/app/maintenance/iconsMap"; // Importação correta
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useMaintenanceTypes } from "@/hooks/useMaintenanceTypes";
+import RegisterManutencaoForm from "./RegisterManutencaoForm";
+import MotoMapaInterativo from "./MapaMoto";
 
 export default function MaintenanceDashboard() {
-  const { maintenanceOptions, isLoading, error } = useMaintenanceTypes();
+  const { maintenanceCategories, maintenanceTypesFlat, isLoading, error } = useMaintenanceTypes();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState<string | null>(null);
 
   if (isLoading) return <p>Carregando tipos de manutenção...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-      {maintenanceOptions.map((option) => {
-        // ✅ Obtendo o ícone corretamente do `iconsMap`
-        const IconComponent = iconsMap[option.icon];
+    <div className="space-y-10">
+      {/* Imagem interativa da moto */}
+      <MotoMapaInterativo
+        onSelectItem={(itemId) => setOpenDialog(itemId)}
+        highlightedItemId={openDialog}
+        maintenanceMap={maintenanceTypesFlat} // use o flat aqui se precisar passar o mapa para pins
+      />
 
-        return (
-          <Dialog
-            key={option.id}
-            open={openDialog === option.id}
-            onOpenChange={(open) => setOpenDialog(open ? option.id : null)}
-          >
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                className="
-                  flex flex-row md:flex-col items-center justify-center 
-                  p-4 h-16 md:h-40 w-full
-                  hover:scale-105 transition-transform
-                "
-              >
-                {/* ✅ Agora renderiza o ícone corretamente */}
-                {IconComponent ? <IconComponent className="text-4xl text-gray-700" /> : null}
+      {/* Dialog por Categoria */}
+      {maintenanceCategories.map((category) => (
+        <Dialog
+          key={category.category}
+          open={selectedCategory === category.category}
+          onOpenChange={(open) => !open && setSelectedCategory(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{category.category}</DialogTitle>
+              <DialogDescription>Selecione o tipo de manutenção</DialogDescription>
+            </DialogHeader>
 
-                <span className="ml-2 md:mt-2 text-center font-semibold">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {category.items.map((option) => (
+                <button
+                  key={option.id}
+                  className="border p-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                  style={{ borderColor: "#eee", color: "#333" }}
+                  onClick={() => setOpenDialog(option.id)}
+                >
                   {option.label}
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{option.label}</DialogTitle>
-                <DialogDescription>{option.description}</DialogDescription>
-              </DialogHeader>
-              <RegisterManutencaoForm
-                maintenanceType={option.id}
-                maintenanceOption={option}
-                onClose={() => setOpenDialog(null)}
-              />
-            </DialogContent>
-          </Dialog>
-        );
-      })}
+                </button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      ))}
+
+      {/* Subdialog para formulário de manutenção */}
+      {maintenanceCategories.flatMap((c) => c.items).map((option) => (
+        <Dialog
+          key={option.id}
+          open={openDialog === option.id}
+          onOpenChange={(open) => !open && setOpenDialog(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{option.label}</DialogTitle>
+              <DialogDescription>{option.description}</DialogDescription>
+            </DialogHeader>
+            <RegisterManutencaoForm
+              maintenanceType={option.id}
+              maintenanceOption={option}
+              onClose={() => setOpenDialog(null)}
+            />
+          </DialogContent>
+        </Dialog>
+      ))}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { addFueling, addOdometerRecord } from "@/lib/db/firebaseServices";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Timestamp } from "firebase/firestore";
+import { FuelTankSwitch } from "@/app/fuelings/components/FuelTankSwitch";
 
 interface Posto {
   id: string;
@@ -261,15 +262,15 @@ export default function RegisterFuelings({ onClose, onFuelingAdded }: RegisterFu
           </div>
 
           {/* Checkbox de tanque cheio */}
-          <div>
-            <Label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={fullTank}
-                onChange={() => setFullTank(!fullTank)}
-              />
-              Marcar como tanque cheio (reinicializa o sistema)
-            </Label>
+                  
+         <div className="flex items-center justify-between rounded-md border p-3">
+            <div className="flex items-center gap-2">
+              <Label className="font-medium">Tanque cheio:</Label>
+              <span className="text-sm font-semibold">
+                {fullTank ? "Sim" : "Não"}
+              </span>
+            </div>
+          <FuelTankSwitch checked={fullTank} onChange={setFullTank} />
           </div>
         </div>
       </div>

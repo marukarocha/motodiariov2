@@ -44,9 +44,9 @@ export function RegisterFuelingButton({ onFuelingAdded }: RegisterFuelingButtonP
           />
         </div>
         <DrawerFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          {/* <Button variant="outline" onClick={() => setOpen(false)}>
             Fechar
-          </Button>
+          </Button> */}
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

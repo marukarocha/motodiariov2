@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { logout } from "@/lib/db/firebaseServices";
 import { useRouter } from "next/navigation";
+import Link from 'next/link' // Certifique-se que está no topo do arquivo
+
 
 export function Header() {
   const router = useRouter();
@@ -34,9 +36,13 @@ export function Header() {
       <div className="flex h-14 items-center justify-between">
         {/* Logo e navegação */}
         <div className="flex items-center space-x-4">
-          <a className="flex items-center space-x-2" href="/">
-            <span className="font-bold sm:inline-block">Moto Diário</span>
-          </a>
+           <Link href="/" className="flex items-center space-x-4">
+              <img
+                src="/logo/logo.webp"
+                alt="Logo"
+                className="ml-6 h-10 w-auto object-contain"
+              />
+            </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <a onClick={handleNavItemClick} className="transition-colors hover:text-foreground/80 text-foreground" href="/earnings">
               Corridas

@@ -7,6 +7,8 @@ import { Toaster } from "@/components/ui/toaster";
 import ConditionalLayout from "@/components/ConditionalLayout";
 // import SwipeableLayout from "@/components/SwipeableLayout";
 import GlobalPreloader from "@/components/Preloader";
+import { BottomNav } from "@/components/home/BottomNav";
+
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -33,6 +35,8 @@ export default function RootLayout({
                 {children}
                 <Toaster />
               {/* </SwipeableLayout> */}
+              <BottomNav />
+
             </ConditionalLayout>
           </AuthProvider>
         </ThemeProvider>

@@ -9,6 +9,7 @@ import ListUsers from './parts/listUsers';
 import ListPlatforms from './parts/listPlatforms';
 import ListMotos from './parts/listMotos';
 import ListMaitenance from './parts/listMaitenance';
+import ListTips from './parts/ListTips';
 import { AuthGuard } from '@/components/USER/Auth/authGuard';
 import AdminDashboard from './components/AdminDashboard';
 
@@ -18,6 +19,9 @@ const menuItems = [
   { key: 'platforms', label: 'Plataformas', icon: <MdOutlineAppSettingsAlt size={20} /> },
   { key: 'motos', label: 'Motos', icon: <FaMotorcycle size={20} /> },
   { key: 'manutencao', label: 'Manutenção', icon: <BsTools size={20} /> },
+  { key: 'tips', label: 'Dicas Manuais', icon: <BsTools size={20} /> },
+
+  
 ];
 
 export default function PainelAdmin() {
@@ -36,6 +40,8 @@ export default function PainelAdmin() {
         return <ListMotos />;
       case 'manutencao':
         return <ListMaitenance />;
+      case 'tips':
+        return <ListTips />;
       default:
         return null;
     }

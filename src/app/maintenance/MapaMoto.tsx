@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 
+
 interface MaintenanceItem {
   id: string;
   label: string;
@@ -78,6 +79,7 @@ export default function MotoMapaInterativoComMenu({ onSelectItem, highlightedIte
   const currentModel = motoModels.find((m) => m.id === selectedModel);
 
   return (
+    
     <div className={`flex ${isMobile ? "flex-col" : "flex-row"} w-full max-w-7xl mx-auto mt-6 gap-4`}>
       <div className="relative flex-1 border border-zinc-700 rounded overflow-hidden">
         <div className="relative w-full" style={{ aspectRatio: '16/9' }}>

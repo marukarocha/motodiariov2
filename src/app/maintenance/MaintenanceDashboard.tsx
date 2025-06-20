@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useMaintenanceTypes } from "@/hooks/useMaintenanceTypes";
 import RegisterManutencaoForm from "./RegisterManutencaoForm";
 import MotoMapaInterativo from "./MapaMoto";
+import Tips from "@/components/Tips";
 
 export default function MaintenanceDashboard() {
   const { maintenanceCategories, maintenanceTypesFlat, isLoading, error } = useMaintenanceTypes();
@@ -16,6 +17,8 @@ export default function MaintenanceDashboard() {
 
   return (
     <div className="space-y-10">
+            <Tips /> {/* <- Aqui exibe a dica */}
+
       {/* Imagem interativa da moto */}
       <MotoMapaInterativo
         onSelectItem={(itemId) => setOpenDialog(itemId)}

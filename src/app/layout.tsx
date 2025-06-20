@@ -8,6 +8,7 @@ import ConditionalLayout from "@/components/ConditionalLayout";
 // import SwipeableLayout from "@/components/SwipeableLayout";
 import GlobalPreloader from "@/components/Preloader";
 import { BottomNav } from "@/components/home/BottomNav";
+import Head from "next/head";
 
 
 
@@ -24,7 +25,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="br" suppressHydrationWarning>
+     <html lang="br" suppressHydrationWarning>
+      <Head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0f172a" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="MotoDiário" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </Head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>

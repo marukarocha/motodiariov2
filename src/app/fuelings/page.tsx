@@ -63,11 +63,15 @@ export default function FuelingsPage() {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Seus Abastecimentos</h1>
 
-      <div className="flex gap-4 mb-4">
-        <RegisterFuelingButton onFuelingAdded={fetchData} />
-        <DateFilter onDateSelected={(from) => setSelectedDate(from)} />
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="w-full md:w-auto">
+          <RegisterFuelingButton onFuelingAdded={fetchData} />
+        </div>
+        <div className="w-full md:w-auto">
+          <DateFilter onDateSelected={(from) => setSelectedDate(from)} />
+        </div>
       </div>
-    
+
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-6">
   <Card className="md:col-span-3">

@@ -1,13 +1,13 @@
-// app/layout.tsx
+// NÃO use "use client" aqui!
 import "@/styles/globals.css";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-import type React from "react";
-
 import { AuthProvider } from "@/components/USER/Auth/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import ConditionalLayout from "@/components/ConditionalLayout";
-import SwipeableLayout from "@/components/SwipeableLayout";
+// import SwipeableLayout from "@/components/SwipeableLayout";
+import GlobalPreloader from "@/components/Preloader";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,10 +27,12 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <ConditionalLayout>
-              <SwipeableLayout>
+                      <GlobalPreloader minTime={3000} />
+
+              {/* <SwipeableLayout> */}
                 {children}
                 <Toaster />
-             </SwipeableLayout>
+              {/* </SwipeableLayout> */}
             </ConditionalLayout>
           </AuthProvider>
         </ThemeProvider>

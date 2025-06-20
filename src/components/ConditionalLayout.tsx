@@ -1,46 +1,47 @@
-// components/ConditionalLayout.tsx
-"use client";
 
-import { usePathname } from "next/navigation";
-import { AuthGuard } from "@/components/USER/Auth/authGuard";
-import { useEffect, useState } from "react";
-import { Header } from "@/components/header";
+/* ConditionalLayout.tsx */
+'use client';
 
-export default function ConditionalLayout({
-  children,
-}: {
+import { usePathname } from 'next/navigation';
+import { AuthGuard } from '@/components/USER/Auth/authGuard';
+import React, { useEffect, useState } from 'react';
+import {Header} from '@/components/header';
+// import Footer from '@/components/Footer';
+
+interface Props {
   children: React.ReactNode;
-}) {
+}
+
+export default function ConditionalLayout({ children }: Props) {
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (pathname) {
-      setReady(true);
-    }
+    if (pathname) setReady(true);
   }, [pathname]);
 
-  if (!ready) {
-    // Enquanto o pathname não estiver disponível, renderiza null ou um componente de loading
-    return null;
-  }
+  if (!ready) return null;
 
-  // Separa os segmentos da URL removendo entradas vazias
-  const segments = pathname.split("/").filter(Boolean);
+  const segments = pathname.split('/').filter(Boolean);
+  const isPublicProfile = segments[0] === 'profile' && segments.length === 2;
+  const isAdminRoute = pathname.startsWith('/admin');
 
-  // Condição para rota pública do perfil: URL com exatamente dois segmentos e o primeiro sendo "profile"
-  const isPublicProfile = segments[0] === "profile" && segments.length === 2;
-
-  // Se for a rota do perfil público, não renderiza o Header nem aplica o AuthGuard
+  // Public profile: no header, no guard
   if (isPublicProfile) {
     return <>{children}</>;
   }
 
-  // Para as demais páginas, renderiza o Header e envolve o conteúdo com AuthGuard
+  // Admin route: no header/footer, but apply auth
+  if (isAdminRoute) {
+    return <AuthGuard>{children}</AuthGuard>;
+  }
+
+  // All other routes: header, footer, auth
   return (
     <>
       <Header />
       <AuthGuard>{children}</AuthGuard>
+      {/* <Footer /> */}
     </>
   );
 }

@@ -1,19 +1,23 @@
 import type { NextConfig } from "next";
 import withPWA from "next-pwa";
 
-const config: NextConfig = {
+// Configuração do plugin PWA separada
+const withPWAConfig = withPWA({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
-  pwa: {
-    dest: "public",
-    register: true,
-    skipWaiting: true,
-    disable: process.env.NODE_ENV === "development", // desativa PWA em dev
-  },
+  // Nenhuma config pwa aqui!
 };
 
-export default withPWA(config);
+// Combina as configs com o plugin
+export default withPWAConfig(nextConfig);

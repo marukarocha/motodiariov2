@@ -3,11 +3,15 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, Info, Link as LinkIcon } from 'lucide-react';
+import { CheckCircle, Info, Link as LinkIcon, XCircle, MapPin } from 'lucide-react';
 import Link from 'next/link';
+import { useGpsStatus } from '@/hooks/useGpsStatus';
+import { useAuth } from '@/components/USER/Auth/AuthContext'; // ajuste ao seu auth
 
 export default function GpsControl() {
   const [started, setStarted] = useState(false);
+  const { currentUser } = useAuth();
+  const { status, lastUpdate, position } = useGpsStatus(currentUser?.uid || '');
 
   return (
     <Card className="p-4 mt-4">
@@ -28,8 +32,9 @@ export default function GpsControl() {
           </Link>{' '}
           e configure o envio para:
         </p>
+
         <div className="bg-gray-100 p-2 rounded text-sm text-gray-800 break-all">
-          https://seusite.com/api/GPSTRACK
+          https://seusite.com/api/GpsTrack?uid={currentUser?.uid}
         </div>
 
         <Button onClick={() => setStarted(true)}>
@@ -37,9 +42,24 @@ export default function GpsControl() {
         </Button>
 
         {started && (
-          <div className="text-green-600 flex items-center gap-2 mt-2">
-            <CheckCircle className="w-5 h-5" />
-            GPS Ativo. Enviando localização em tempo real.
+          <div className="mt-4 space-y-2">
+            <div className={`flex items-center gap-2 ${status === 'online' ? 'text-green-600' : 'text-red-600'}`}>
+              {status === 'online' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+              {status === 'online' ? 'GPS Ativo. Dados sendo recebidos.' : 'GPS Inativo ou sem dados recentes.'}
+            </div>
+
+            {position && (
+              <div className="flex items-center gap-2 text-gray-700 text-sm">
+                <MapPin className="w-4 h-4" />
+                Última posição: {position.lat.toFixed(5)}, {position.lon.toFixed(5)}
+              </div>
+            )}
+
+            {lastUpdate && (
+              <p className="text-xs text-gray-500">
+                Atualizado em: {lastUpdate.toLocaleTimeString()}
+              </p>
+            )}
           </div>
         )}
       </CardContent>

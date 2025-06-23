@@ -3,34 +3,31 @@ import { db } from '@/lib/db/firebaseServices';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 
 export function useGpsStatus(userId: string) {
-  const [gpsStatus, setGpsStatus] = useState<'offline' | 'online'>('offline');
+  const [status, setStatus] = useState<'online' | 'offline'>('offline');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [position, setPosition] = useState<{ lat: number; lon: number } | null>(null);
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'gpsLogs'),
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
+    const ref = collection(db, 'users', userId, 'gpsLogs');
+    const q = query(ref, orderBy('createdAt', 'desc'), limit(1));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const doc = snapshot.docs[0];
       if (doc) {
         const data = doc.data();
-        const now = Date.now();
-        const last = data.createdAt?.toDate().getTime();
+        const created = data.createdAt?.toDate();
 
         setPosition({ lat: data.latitude, lon: data.longitude });
-        setLastUpdate(new Date(last));
+        setLastUpdate(created);
 
-        if (now - last < 1000 * 60 * 2) {
-          setGpsStatus('online');
+        if (created && Date.now() - created.getTime() < 1000 * 60 * 2) {
+          setStatus('online');
         } else {
-          setGpsStatus('offline');
+          setStatus('offline');
         }
       } else {
-        setGpsStatus('offline');
+        setStatus('offline');
+        setLastUpdate(null);
         setPosition(null);
       }
     });
@@ -38,5 +35,5 @@ export function useGpsStatus(userId: string) {
     return () => unsubscribe();
   }, [userId]);
 
-  return { gpsStatus, lastUpdate, position };
+  return { status, lastUpdate, position };
 }

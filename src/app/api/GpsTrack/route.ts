@@ -31,16 +31,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Dados inválidos' }, { status: 400 });
     }
 
-    const dateKey = parsedTime.toISOString().split('T')[0]; // 2025-06-23
-    const timeKey = parsedTime.toTimeString().slice(0, 8).replace(/:/g, ''); // 214251
+    // 🔄 Converte para fuso horário de São Paulo (UTC-3)
+    const formatterDate = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
 
-    // Novo caminho: gpsLogs/{dateKey}/{timeKey}
+    const formatterTime = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+
+    const dateParts = formatterDate.formatToParts(parsedTime);
+    const timeParts = formatterTime.formatToParts(parsedTime);
+
+    const dateKey = `${dateParts.find(p => p.type === 'year')?.value}-${dateParts.find(p => p.type === 'month')?.value}-${dateParts.find(p => p.type === 'day')?.value}`;
+    const timeKey = `${timeParts.find(p => p.type === 'hour')?.value}${timeParts.find(p => p.type === 'minute')?.value}${timeParts.find(p => p.type === 'second')?.value}`;
+
+    // 📍 Salva no caminho: gpsLogs/{dateKey}/{timeKey}
     await adminDb
       .collection('users')
       .doc(userId)
       .collection('gpsLogs')
       .doc(dateKey)
-      .collection(dateKey) // <- nome da subcoleção igual à data
+      .collection(dateKey)
       .doc(timeKey)
       .set({
         latitude: parsedLat,

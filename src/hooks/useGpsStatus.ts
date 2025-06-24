@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/db/firebaseServices';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import {
+  collectionGroup,
+  query,
+  orderBy,
+  limit,
+  onSnapshot
+} from 'firebase/firestore';
 
 export function useGpsStatus(userId: string) {
   const [status, setStatus] = useState<'online' | 'offline'>('offline');
@@ -10,8 +16,12 @@ export function useGpsStatus(userId: string) {
   useEffect(() => {
     if (!userId) return;
 
-    const ref = collection(db, 'users', userId, 'gpsLogs');
-    const q = query(ref, orderBy('createdAt', 'desc'), limit(1));
+    // Busca nos registros do usuário dentro de todas as datas (subcoleções)
+    const q = query(
+      collectionGroup(db, userId), // busca em users/{userId}/gpsLogs/{date}/{time}
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const doc = snapshot.docs[0];

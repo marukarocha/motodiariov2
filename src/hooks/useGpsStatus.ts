@@ -8,6 +8,8 @@ export function useGpsStatus(userId: string) {
   const [position, setPosition] = useState<{ lat: number; lon: number } | null>(null);
 
   useEffect(() => {
+    if (!userId) return;
+
     const ref = collection(db, 'users', userId, 'gpsLogs');
     const q = query(ref, orderBy('createdAt', 'desc'), limit(1));
 
@@ -15,20 +17,21 @@ export function useGpsStatus(userId: string) {
       const doc = snapshot.docs[0];
       if (doc) {
         const data = doc.data();
+        const lat = parseFloat(data.latitude);
+        const lon = parseFloat(data.longitude);
         const created = data.createdAt?.toDate();
 
-        setPosition({ lat: data.latitude, lon: data.longitude });
-        setLastUpdate(created);
-
-        if (created && Date.now() - created.getTime() < 1000 * 60 * 2) {
-          setStatus('online');
+        if (!isNaN(lat) && !isNaN(lon) && created) {
+          setPosition({ lat, lon });
+          setLastUpdate(created);
+          setStatus(Date.now() - created.getTime() < 1000 * 60 * 2 ? 'online' : 'offline');
         } else {
+          setPosition(null);
           setStatus('offline');
         }
       } else {
-        setStatus('offline');
-        setLastUpdate(null);
         setPosition(null);
+        setStatus('offline');
       }
     });
 

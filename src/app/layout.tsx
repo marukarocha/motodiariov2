@@ -8,7 +8,7 @@ import ConditionalLayout from "@/components/ConditionalLayout";
 // import SwipeableLayout from "@/components/SwipeableLayout";
 import GlobalPreloader from "@/components/Preloader";
 import { BottomNav } from "@/components/home/BottomNav";
-
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -30,7 +30,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-title" content="MotoDiário" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <SpeedInsights/>
       </head>
+      
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>

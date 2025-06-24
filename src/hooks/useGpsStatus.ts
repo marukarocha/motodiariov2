@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/db/firebaseServices';
 import {
-  collectionGroup,
+  collection,
   query,
   orderBy,
   limit,
@@ -16,12 +16,13 @@ export function useGpsStatus(userId: string) {
   useEffect(() => {
     if (!userId) return;
 
-    // Busca nos registros do usuário dentro de todas as datas (subcoleções)
-    const q = query(
-      collectionGroup(db, userId), // busca em users/{userId}/gpsLogs/{date}/{time}
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
+    // Data de hoje no formato correto (fuso de São Paulo)
+    const today = new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).split(' ')[0]; // YYYY-MM-DD
+
+    // Acessa: users/{userId}/gpsLogs/{YYYY-MM-DD}/{hhmmss}
+    const gpsLogsTodayRef = collection(db, 'users', userId, 'gpsLogs', today, today);
+
+    const q = query(gpsLogsTodayRef, orderBy('createdAt', 'desc'), limit(1));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const doc = snapshot.docs[0];
@@ -34,7 +35,8 @@ export function useGpsStatus(userId: string) {
         if (!isNaN(lat) && !isNaN(lon) && created) {
           setPosition({ lat, lon });
           setLastUpdate(created);
-          setStatus(Date.now() - created.getTime() < 1000 * 60 * 2 ? 'online' : 'offline');
+          const isRecent = Date.now() - created.getTime() < 1000 * 60 * 2;
+          setStatus(isRecent ? 'online' : 'offline');
         } else {
           setPosition(null);
           setStatus('offline');

@@ -4,7 +4,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, CreditCard, DollarSign, Car } from "lucide-react";
+import { Activity,Route, CreditCard, DollarSign, Car } from "lucide-react";
+import { Button } from '@/components/ui/button';
 import { calculateTotalEarnings, calculateTotalKilometers, calculateTotalHours } from "@/components/home/utils";
 import { useAuth } from "@/components/USER/Auth/AuthContext";
 import WeatherCard from "@/components/home/WeatherCard";
@@ -14,6 +15,8 @@ import FuelSummaryCard from "@/app/fuelings/components/FuelSummaryCard";
 import { RegisterFuelingButton } from "@/app/fuelings/components/RegisterFuelingsButton";
 import { RegisterEarningButton } from "@/app/earnings/RegisterEarningButton";
 import { Fueling } from "@/types/types";
+import Link from 'next/link';
+
 
 interface Earning {
   id: string;
@@ -155,6 +158,12 @@ export function Overview({ earnings }: OverviewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalKilometers?.toFixed(2) || 0} km</div>
+        <Link href="/maping" passHref>
+          <Button variant="link" className="mt-2 text-sm text-blue-500 hover:underline p-0">
+            <Route className="w-4 h-4 mr-1" />
+            Histórico de Corridas
+          </Button>
+        </Link>
           </CardContent>
         </Card>
         <Card>

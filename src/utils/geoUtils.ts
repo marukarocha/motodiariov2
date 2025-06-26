@@ -1,38 +1,32 @@
-// src/app/utils/geoUtils.ts
+export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const R = 6371; // km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
-/**
- * Cria um bounding box (~raio de 150 km) em torno de [lng, lat].
- * @param lng longitude
- * @param lat latitude
- * @param radiusKm raio em km (padrão 150)
- * @returns [minX, minY, maxX, maxY]
- */
-export function computeBbox(
-  lng: number,
-  lat: number,
-  radiusKm = 150
-): [number, number, number, number] {
-  // 1 grau latitude ~ 111 km
-  const latDelta = radiusKm / 111.12;
-
-  // longitude varia com cos(lat)
-  const rad = (Math.PI / 180) * lat;
-  const lngDelta = radiusKm / (111.12 * Math.cos(rad));
-
-  const minX = lng - lngDelta;
-  const maxX = lng + lngDelta;
-  const minY = lat - latDelta;
-  const maxY = lat + latDelta;
-
-  return [minX, minY, maxX, maxY];
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
-/**
- * Verifica se coords [lng, lat] estão dentro do bounding box [minX, minY, maxX, maxY].
- */
-export function isInsideBbox(
-  [lng, lat]: [number, number],
-  [minX, minY, maxX, maxY]: [number, number, number, number]
-): boolean {
-  return lng >= minX && lng <= maxX && lat >= minY && lat <= maxY;
+export function calcularDistanciaTotal(pontos: any[]) {
+  let total = 0;
+  for (let i = 1; i < pontos.length; i++) {
+    const a = pontos[i - 1];
+    const b = pontos[i];
+    total += haversineDistance(a.latitude, a.longitude, b.latitude, b.longitude);
+  }
+  return total;
+}
+
+export function calcularVelocidadeMedia(pontos: any[]) {
+  const emMovimento = pontos.filter((p: any) => p.speed > 1);
+  if (emMovimento.length < 2) return 0;
+
+  const tempoTotal = (emMovimento[emMovimento.length - 1].createdAt?.toDate() - emMovimento[0].createdAt?.toDate()) / 3600000;
+  const distancia = calcularDistanciaTotal(emMovimento);
+  return tempoTotal > 0 ? distancia / tempoTotal : 0;
 }

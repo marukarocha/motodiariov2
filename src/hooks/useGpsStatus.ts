@@ -21,7 +21,7 @@ export function useGpsStatus(userId: string) {
 
     // Acessa: users/{userId}/gpsLogs/{YYYY-MM-DD}/{hhmmss}
     const gpsLogsTodayRef = collection(db, 'users', userId, 'gpsLogs', today, today);
-
+    
     const q = query(gpsLogsTodayRef, orderBy('createdAt', 'desc'), limit(1));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

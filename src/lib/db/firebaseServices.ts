@@ -209,7 +209,51 @@ export async function deleteMaintenance(userId: string, maintenanceId: string): 
     throw error;
   }
 }
+// Última manutenção do tipo "Troca de Óleo"
+export async function getLastOilChange(uid: string) {
+  const q = query(
+    collection(db, `users/${uid}/manutencoes`), // << CORRIGIDO AQUI
+    orderBy("timestamp", "desc"),
+    limit(20)
+  );
 
+  const snapshot = await getDocs(q);
+
+  if (!snapshot.empty) {
+    const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    console.log("📦 Registros encontrados:", docs.map(d => d.tipo));
+
+    const oilEntry = docs.find(
+      (doc) =>
+        typeof doc.tipo === "string" &&
+        doc.tipo.toLowerCase().includes("óleo")
+    );
+
+    console.log("🔧 Última troca de óleo encontrada:", oilEntry);
+    return oilEntry || null;
+  }
+
+  return null;
+}
+
+
+export async function getCurrentOdometer(uid: string) {
+  const q = query(
+    collection(db, `users/${uid}/odometerRecords`), // <- CORRIGIDO AQUI
+    orderBy("recordedAt", "desc"),
+    limit(1)
+  );
+
+  const snapshot = await getDocs(q);
+  if (!snapshot.empty) {
+    const doc = snapshot.docs[0].data();
+    console.log("📍 Último odômetro encontrado:", doc);
+    return doc;
+  }
+
+  console.warn("📭 Nenhum registro de odômetro encontrado.");
+  return null;
+}
 // -----------------------------------------------------------------------------
 // FUNÇÕES PARA BIKE
 // -----------------------------------------------------------------------------

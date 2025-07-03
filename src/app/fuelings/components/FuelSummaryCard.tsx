@@ -5,6 +5,8 @@ import { GaugeComponent } from 'react-gauge-component';
 import { Fueling } from '@/types/types';
 import { calculateAverageConsumptionFromFuelings } from '@/utils/fuelCalculations';
 import OdometerUpdateButton from "@/app/odometer/OdometerUpdateButton";
+import OilChangeCalculator from "@/app/maintenance/components/OilChangeCalculator";
+
 
 export interface FuelSummaryCardProps {
   fuelings: Fueling[];
@@ -88,9 +90,11 @@ export const FuelSummaryCard = ({ fuelings, fuelAvailable, tankVolume, kilometer
 
         </div>
 
-        <div className="flex justify-center">
-        </div>
+        
       </div>
+      <div className="flex  m-5 justify-center">
+          <OilChangeCalculator />
+        </div>
     </div>
   );
 };

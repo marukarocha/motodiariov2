@@ -17,18 +17,6 @@ export default function GpsTrackingPage() {
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Rastreamento Diário por GPS</h1>
-
-      <div className="flex items-center gap-2">
-        <label htmlFor="data">Selecionar data:</label>
-        <input
-          id="data"
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="border px-2 py-1 rounded"
-        />
-      </div>
-
       <TrackingMap userId={userId} date={selectedDate} />
     </div>
   );
